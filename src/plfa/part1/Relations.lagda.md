@@ -246,13 +246,55 @@ partial order but not a total order.
 Give an example of a preorder that is not a partial order.
 
 ```
--- Your code goes here
+data _??_ : ℕ → ℕ → Set where
+  m??n : ∀ {m n : ℕ} → m ?? n
+
+??-refl : ∀ {n : ℕ} → n ?? n → n ?? n
+??-refl m??n = m??n
+
+??-trans : ∀ {m n p : ℕ} → m ?? n → n ?? p → m ?? p
+??-trans m??n m??n = m??n
+
+-- ??-anti-symm counterexample: m=1 and n=2
+
+-- alternative example: ≤ equipped with a sz≤n constructor;
+-- sz<?n : ∀ {n : ℕ} → suc zero ≤ n
+-- then a counterexample for anti-symm is m=0 and n=1
 ```
 
 Give an example of a partial order that is not a total order.
 
 ```
--- Your code goes here
+-- maybe something that compares odds with odds and evens with evens but not across?
+data _<?_ : ℕ → ℕ → Set where
+  0<?0 : 0 <? 0
+  1<?1 : 1 <? 1
+  m<?ssn : ∀ {m n : ℕ} → m <? n → m <? suc (suc n)
+  ss<?ss : ∀ {m n : ℕ} → m <? n → suc (suc m) <? suc (suc n)
+
+<?-refl : ∀ {n : ℕ} → n <? n
+<?-refl {zero} = 0<?0
+<?-refl {suc zero} = 1<?1
+<?-refl {suc (suc n)} = ss<?ss <?-refl
+
+<?-trans : ∀ {m n p : ℕ} → m <? n → n <? p → m <? p
+<?-trans 0<?0 y = y
+<?-trans 1<?1 y = y
+<?-trans (m<?ssn x) (m<?ssn y) = m<?ssn (<?-trans (m<?ssn x) y)
+<?-trans (m<?ssn x) (ss<?ss y) = m<?ssn (<?-trans x y)
+<?-trans (ss<?ss x) (m<?ssn y) = ss<?ss (<?-trans (m<?ssn x) y)
+<?-trans (ss<?ss x) (ss<?ss y) = ss<?ss (<?-trans x y)
+
+<?-antisym : ∀ {m n : ℕ} → m <? n → n <? m → m ≡ n
+<?-antisym 0<?0 y = refl
+<?-antisym 1<?1 y = refl
+<?-antisym (m<?ssn x) (m<?ssn y) = cong (λ x → suc (suc x)) (<?-antisym ((<?-trans (m<?ssn <?-refl) x)) ((<?-trans (m<?ssn <?-refl) y)))
+<?-antisym (m<?ssn x) (ss<?ss y) = cong (λ x → suc (suc x)) (<?-antisym ((<?-trans (m<?ssn <?-refl) x)) y)
+<?-antisym (ss<?ss x) (m<?ssn y) = cong (λ x → suc (suc x)) (<?-antisym x (<?-trans (m<?ssn <?-refl) y))
+<?-antisym (ss<?ss x) (ss<?ss y) = cong (λ x → suc (suc x)) (<?-antisym x y)
+
+-- but <? is clearly, surely, probably, not total
+-- I guess we need to prove a contradiction but we don't know how to do that yet
 ```
 
 ## Reflexivity
@@ -288,8 +330,8 @@ hold, then `m ≤ p` holds.  Again, `m`, `n`, and `p` are implicit:
   → n ≤ p
     -----
   → m ≤ p
-≤-trans z≤n       _          =  z≤n
-≤-trans (s≤s m≤n) (s≤s n≤p)  =  s≤s (≤-trans m≤n n≤p)
+≤-trans z≤n y = z≤n
+≤-trans (s≤s x) (s≤s y) = s≤s (≤-trans x y)
 ```
 Here the proof is by induction on the _evidence_ that `m ≤ n`.  In the
 base case, the first inequality holds by `z≤n` and must show `zero ≤ p`,
@@ -365,7 +407,11 @@ The above proof omits cases where one argument is `z≤n` and one
 argument is `s≤s`.  Why is it ok to omit them?
 
 ```
--- Your code goes here
+-- If the first argument is z≤n, then the second index of the second
+-- argument must be zero, and the only constructor for that is z≤n.
+
+-- If the first argument is s≤s, then the first index of the second
+-- argument must be suc n, and the only constructor for that is s≤s.
 ```
 
 
@@ -555,7 +601,18 @@ transitivity proves `m + p ≤ n + q`, as was to be shown.
 Show that multiplication is monotonic with regard to inequality.
 
 ```
--- Your code goes here
+open import Data.Nat using (_*_)
+open import Data.Nat.Properties using (*-comm)
+
+*-monoʳ-≤ : ∀ (n p q : ℕ) → p ≤ q → n * p ≤ n * q
+*-monoʳ-≤ zero p q p≤q = z≤n
+*-monoʳ-≤ (suc n) p q p≤q = +-mono-≤ p q (n * p) (n * q) p≤q (*-monoʳ-≤ n p q p≤q)
+
+*-monoˡ-≤ : ∀ (m n p : ℕ) → m ≤ n → m * p ≤ n * p
+*-monoˡ-≤ m n p m≤n rewrite *-comm m p | *-comm n p = *-monoʳ-≤ p m n m≤n
+
+*-mono-≤ : ∀ (m n p q : ℕ) → m ≤ n → p ≤ q → m * p ≤ n * q
+*-mono-≤ m n p q m≤n p≤q = ≤-trans {m * p} {n * p} {n * q} (*-monoˡ-≤ m n p m≤n) (*-monoʳ-≤ n p q p≤q)
 ```
 
 
@@ -602,7 +659,9 @@ exploiting the corresponding properties of inequality.
 Show that strict inequality is transitive.
 
 ```
--- Your code goes here
+<-trans : ∀ {m n p : ℕ} → m < n → n < p → m < p
+<-trans z<s (s<s n<p) = z<s
+<-trans (s<s m<n) (s<s n<p) = s<s (<-trans m<n n<p)
 ```
 
 #### Exercise `trichotomy` (practice) {#trichotomy}
@@ -620,7 +679,23 @@ similar to that used for totality.
 [negation](/Negation/).)
 
 ```
--- Your code goes here
+data _>_ (m n : ℕ) : Set where
+  flip : n > m → m > n
+
+data Trich (m n : ℕ) : Set where
+  forward : m < n → Trich m n
+  equal   : m ≡ n → Trich m n
+  flipped : n < m → Trich m n
+
+<-trich : ∀ (m n : ℕ) → Trich m n
+<-trich zero zero = equal refl
+<-trich zero (suc n) = forward z<s
+<-trich (suc m) zero = flipped z<s
+<-trich (suc m) (suc n) with <-trich m n
+... | forward m<n = forward (s<s m<n)
+... | equal m≡n = equal (cong suc m≡n)
+... | flipped n<m = flipped (s<s n<m)
+
 ```
 
 #### Exercise `+-mono-<` (practice) {#plus-mono-less}
@@ -629,7 +704,19 @@ Show that addition is monotonic with respect to strict inequality.
 As with inequality, some additional definitions may be required.
 
 ```
--- Your code goes here
++-monoʳ-< : ∀ (n p q : ℕ) → p < q → n + p < n + q
++-monoʳ-< zero p q p<q = p<q
++-monoʳ-< (suc n) p q p<q = s<s (+-monoʳ-< n p q p<q)
+
++-monoˡ-< : ∀ (m n p : ℕ) → m < n → m + p < n + p
++-monoˡ-< m n p m<n rewrite +-comm m p | +-comm n p = +-monoʳ-< p m n m<n
+
++-mono-< : ∀ (m n p q : ℕ)
+  → m < n
+  → p < q
+    -------------
+  → m + p < n + q
++-mono-< m n p q m<n p<q = <-trans {m + p} {n + p} {n + q} (+-monoˡ-< m n p m<n) (+-monoʳ-< n p q p<q)
 ```
 
 #### Exercise `≤-iff-<` (recommended) {#leq-iff-less}
@@ -637,7 +724,13 @@ As with inequality, some additional definitions may be required.
 Show that `suc m ≤ n` implies `m < n`, and conversely.
 
 ```
--- Your code goes here
+<-iff-≤ : ∀ (m n : ℕ) → suc m ≤ n → m < n
+<-iff-≤ zero (suc n) sm≤n = z<s
+<-iff-≤ (suc m) (suc n) (s≤s sm≤n) = s<s (<-iff-≤ m n sm≤n)
+
+≤-iff-< : ∀ (m n : ℕ) → m < n → suc m ≤ n
+≤-iff-< zero (suc n) m<n = s≤s z≤n
+≤-iff-< (suc m) (suc n) (s<s m<n) = s≤s (≤-iff-< m n m<n)
 ```
 
 #### Exercise `<-trans-revisited` (practice) {#less-trans-revisited}
@@ -647,7 +740,12 @@ using the relation between strict inequality and inequality and
 the fact that inequality is transitive.
 
 ```
--- Your code goes here
+≤-suc : ∀ (n : ℕ) → n ≤ suc n
+≤-suc zero = z≤n
+≤-suc (suc n) = s≤s (≤-suc n)
+
+<-trans' : ∀ (m n p : ℕ) → m < n → n < p → m < p
+<-trans' m n p m<n n<p = <-iff-≤ m p (≤-trans (≤-iff-< m n m<n) (≤-trans (≤-suc n) (≤-iff-< n p n<p)))
 ```
 
 
@@ -754,7 +852,18 @@ successor of the sum of two even numbers, which is even.
 Show that the sum of two odd numbers is even.
 
 ```
--- Your code goes here
+-- o+o≡e : ∀ {m n : ℕ} → odd m → odd n → even (m + n)
+-- o+o≡e om (suc en) = suc (o+e≡o om en)
+-- o+o≡e : ∀ {m n : ℕ} → odd m → odd n → even (m + n)
+-- o+o≡e {m} {n} (suc em) on = suc {!o+e≡o on em!}
+-- o+o≡e : ∀ {m n : ℕ} → odd m → odd n → even (m + n)
+-- o+o≡e (suc em) (suc en) = suc {!!}
+
+-- have to do it this way because there's no way to construct an "odd (m + succ n)";
+-- we need to always pull numbers off the left. I guess...?
+o+o≡e : ∀ {m n : ℕ} → odd m → odd n → even (m + n)
+o+o≡e (suc zero) on = suc on
+o+o≡e (suc (suc om)) on = suc (suc (o+o≡e om on))
 ```
 
 #### Exercise `Bin-predicates` (stretch) {#Bin-predicates}
@@ -807,7 +916,171 @@ properties of `One`. Also, you may need to prove that
 if `One b` then `1` is less or equal to the result of `from b`.)
 
 ```
--- Your code goes here
+data Bin : Set where
+  ⟨⟩ : Bin
+  _O : Bin → Bin
+  _I : Bin → Bin
+
+inc : Bin → Bin
+inc ⟨⟩ = ⟨⟩ I
+inc (x O) = x I
+inc (x I) = inc x O
+
+from : Bin → ℕ
+from ⟨⟩ = zero
+from (x O) = from x + from x
+from (x I) = suc (from x + from x)
+
+to : ℕ → Bin
+to zero = ⟨⟩ O
+to (suc x) = inc (to x)
+
+data One : Bin → Set where
+  ⟨I⟩ : One (⟨⟩ I)
+  _O : ∀ {b : Bin} → One b → One (b O)
+  _I : ∀ {b : Bin} → One b → One (b I)
+
+data Can : Bin → Set where
+  lead : ∀ {b : Bin} → One b → Can b
+  zero : Can (⟨⟩ O)
+
+inc-one : ∀ {b : Bin} → One b → One (inc b)
+inc-one ⟨I⟩ = ⟨I⟩ O
+inc-one (x O) = x I
+inc-one (x I) = (inc-one x) O
+
+inc-can : ∀ {b : Bin} → Can b → Can (inc b)
+inc-can (lead o) = lead (inc-one o)
+inc-can zero = lead ⟨I⟩
+
+to-one : ∀ (n : ℕ) → One (to (suc n))
+to-one zero = ⟨I⟩
+to-one (suc n) = inc-one (to-one n)
+
+to-can : ∀ (n : ℕ) → Can (to n)
+to-can zero = Can.zero
+to-can (suc n) = lead (to-one n)
+
+data eo-Tot (n : ℕ) : Set where
+  e : even n → eo-Tot n
+  o : odd n → eo-Tot n
+
+n-tot : ∀ (n : ℕ) → eo-Tot n
+n-tot zero = e zero
+n-tot (suc n) with n-tot n
+... | e x = o (suc x)
+... | o x = e (suc x)
+
+n+n≡e : ∀ (n : ℕ) → even (n + n)
+n+n≡e n with n-tot n
+... | e x = e+e≡e x x
+... | o x = o+o≡e x x
+
+
+n≤sn : ∀ (n : ℕ) → n ≤ suc n
+n≤sn zero = z≤n
+n≤sn (suc n) = s≤s (n≤sn n)
+
+
+n≤n+n : ∀ (n : ℕ) → n ≤ n + n
+n≤n+n zero = z≤n
+n≤n+n (suc n) rewrite +-comm n (suc n) = s≤s (≤-trans (n≤n+n n) (n≤sn (n + n)))
+
+m≤n+n : ∀ (m n : ℕ) → m ≤ n → m ≤ n + n
+m≤n+n m n m≤n = ≤-trans (n≤n+n m) (+-mono-≤ m n m n m≤n m≤n)
+
+one-prop : ∀ (b : Bin) → One b → 1 ≤ from b
+one-prop .(⟨⟩ I) ⟨I⟩ = s≤s z≤n
+one-prop (b O) (ob O) = m≤n+n 1 (from b) (one-prop b ob) 
+one-prop .(_ I) (ob I) = s≤s z≤n
+
+uninc : ∀ (b : Bin) → b I ≡ inc (b O)
+uninc b = refl
+
+open import Function using (_∘_; _$_)
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
+
+-- huh-double : ∀ (n : ℕ) → to (suc n + suc n) ≡ to (suc n) O
+-- huh-double n rewrite +-comm n (suc n) = begin
+--   inc (to (suc (n + n)))
+--   ≡⟨⟩
+--   inc (inc (to (n + n)))
+--   ≡⟨ {!!} ⟩
+--   (inc (to n)) O
+--   ≡⟨⟩
+--   (to (suc n)) O
+--   ∎
+
+huh-move : ∀ (n : ℕ) → inc (inc ((to n) O)) ≡ (inc (to n)) O
+huh-move n = refl
+
+um-double : ∀ (n : ℕ) → 1 ≤ n → to (n + n) ≡ to n O
+um-double (suc zero) (s≤s z≤n) = refl
+um-double (suc (suc n)) (s≤s z≤n) = begin
+  to (suc (suc n) + suc (suc n))
+  ≡⟨⟩
+  inc (to ((suc n) + suc (suc n)))
+  ≡⟨ cong (λ x → (inc (to x))) (+-comm (suc n) (suc (suc n))) ⟩
+  inc (to (suc (suc n) + (suc n)))
+  ≡⟨⟩
+  inc (inc (to ((suc n) + (suc n))))
+  ≡⟨ cong (inc ∘ inc) (um-double (suc n) (s≤s z≤n)) ⟩
+  inc (inc (to (suc n) O))
+  ≡⟨ huh-move (suc n) ⟩
+  (inc (to (suc n))) O
+  ≡⟨⟩
+  to (suc (suc n)) O
+  ∎
+
+-- O-is-double : ∀ (b : Bin) → from b + from b ≡ from (b O)
+-- O-is-double b = refl
+rev-O-is-double : ∀ (b : Bin) → from b + from b ≡ from (b O)
+rev-O-is-double b = refl
+
+
+-- THIS IS NOT TRUE!
+-- it fails when from b is 0!
+-- O-is-double : ∀ (b : Bin) → to (from b + from b) ≡ b O
+-- O-is-double ⟨⟩ = refl
+-- O-is-double (b O) rewrite rev-O-is-double b = {!!}
+-- O-is-double (b I) = {!!}
+
+one-roundtrip : ∀ (b : Bin) → One b → to (from b) ≡ b
+-- -- one-roundtrip _ ⟨I⟩ = refl
+-- -- one-roundtrip (b O) (ob O) rewrite O-is-double b = refl
+-- -- one-roundtrip (b I) (ob I) rewrite O-is-double b = refl
+-- one-roundtrip _ ⟨I⟩ = refl
+-- one-roundtrip (b O) (ob O) = {!!}
+-- one-roundtrip (b I) (ob I) = {!!}
+-- wait okay can we directly use one-roundtrip here,
+-- plus um-double?
+one-roundtrip _ ⟨I⟩ = refl
+one-roundtrip (b O) (ob O) = begin
+  to (from (b O))
+  ≡⟨⟩
+  to (from b + from b)
+  ≡⟨ um-double (from b) (one-prop b ob) ⟩
+  to (from b) O
+  ≡⟨ cong (_O) (one-roundtrip b ob) ⟩
+  b O
+  ∎
+one-roundtrip (b I) (ob I) = begin
+  to (from (b I))
+  ≡⟨⟩
+  inc (to (from (b O)))
+  ≡⟨⟩
+  inc (to (from b + from b))
+  ≡⟨ cong inc (um-double (from b) (one-prop b ob)) ⟩
+  inc (to (from b) O)
+  ≡⟨⟩
+  to (from b) I
+  ≡⟨ cong (_I) (one-roundtrip b ob) ⟩
+  b I
+  ∎
+
+can-roundtrip : ∀ (b : Bin) → Can b → to (from b) ≡ b
+can-roundtrip b (lead x) = one-roundtrip b x
+can-roundtrip .(⟨⟩ O) zero = refl
 ```
 
 ## Standard library
