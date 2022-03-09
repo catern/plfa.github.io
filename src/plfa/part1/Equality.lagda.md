@@ -274,7 +274,9 @@ Sadly, we cannot use the definition of trans' using ≡-Reasoning as the definit
 for trans. Can you see why? (Hint: look at the definition of `_≡⟨_⟩_`)
 
 ```
--- Your code goes here
+-- because _≡⟨_⟩_ uses trans??
+-- but we could just do refl-based reasoning in the definition of _≡⟨_⟩_ ourselves
+-- and not use trans
 ```
 
 ## Chains of equations, another example
@@ -362,7 +364,109 @@ it to write out an alternative proof that addition is monotonic with
 regard to inequality.  Rewrite all of `+-monoˡ-≤`, `+-monoʳ-≤`, and `+-mono-≤`.
 
 ```
--- Your code goes here
+data _≤_ : ℕ → ℕ → Set where
+
+  z≤n : ∀ {n : ℕ}
+      --------
+    → zero ≤ n
+
+  s≤s : ∀ {m n : ℕ}
+    → m ≤ n
+      -------------
+    → suc m ≤ suc n
+
+infix 4 _≤_
+
+module ≤-Reasoning where
+
+  infix  1 ≤-begin_
+  infixr 2 _≤⟨⟩_ _≤⟨_⟩_
+  infix  3 _≤-∎
+
+  ≤-begin_ : ∀ {x y : ℕ}
+    → x ≤ y
+      -----
+    → x ≤ y
+  ≤-begin x≤y  =  x≤y
+
+  _≤⟨⟩_ : ∀ (x : ℕ) {y : ℕ}
+    → x ≤ y
+      -----
+    → x ≤ y
+  x ≤⟨⟩ x≤y  =  x≤y
+
+  _≤⟨_⟩_ : ∀ (x : ℕ) {y z : ℕ}
+    → x ≤ y
+    → y ≤ z
+      -----
+    → x ≤ z
+  -- defining transitivity inline just for fun
+  zero ≤⟨ z≤n ⟩ y≤z = z≤n
+  (suc x) ≤⟨ s≤s x≤y ⟩ s≤s y≤z = s≤s (x ≤⟨ x≤y ⟩ y≤z)
+
+  _≤-∎ : ∀ (x : ℕ)
+      -----
+    → x ≤ x
+  zero ≤-∎ = z≤n
+  suc x ≤-∎ = s≤s (x ≤-∎)
+
+open ≤-Reasoning
+
++-monoʳ-≤ : ∀ (n p q : ℕ)
+  → p ≤ q
+    -------------
+  → n + p ≤ n + q
++-monoʳ-≤ zero p q p≤q = ≤-begin
+  zero + p
+  ≤⟨⟩
+  p
+  ≤⟨ p≤q ⟩
+  q
+  ≤⟨⟩
+  zero + q
+  ≤-∎
+
++-monoʳ-≤ (suc n) p q p≤q = ≤-begin
+  (suc n) + p
+  ≤⟨⟩
+  suc (n + p)
+  ≤⟨ s≤s (+-monoʳ-≤ n p q p≤q) ⟩
+  suc (n + q)
+  ≤⟨⟩
+  (suc n) + q
+  ≤-∎
+
+≤-iff-≡ : ∀ (m n : ℕ) → m ≡ n → m ≤ n
+≤-iff-≡ zero zero m≡n = z≤n
+≤-iff-≡ (suc m) (suc n) refl = s≤s (≤-iff-≡ m n refl)
+
++-monoˡ-≤ : ∀ (m n p : ℕ)
+  → m ≤ n
+    -------------
+  → m + p ≤ n + p
++-monoˡ-≤ m n p m≤n = ≤-begin
+  m + p
+  ≤⟨ ≤-iff-≡ (m + p) (p + m) (+-comm m p) ⟩
+  p + m
+  ≤⟨ +-monoʳ-≤ p m n m≤n ⟩
+  p + n
+  ≤⟨ ≤-iff-≡ (p + n) (n + p) (+-comm p n) ⟩
+  n + p
+  ≤-∎
+
++-mono-≤ : ∀ (m n p q : ℕ)
+  → m ≤ n
+  → p ≤ q
+    -------------
+  → m + p ≤ n + q
++-mono-≤ m n p q m≤n p≤q = ≤-begin
+  m + p
+  ≤⟨ +-monoˡ-≤ m n p m≤n ⟩
+  n + p
+  ≤⟨ +-monoʳ-≤ n p q p≤q ⟩
+  n + q
+  ≤-∎
+
 ```
 
 
