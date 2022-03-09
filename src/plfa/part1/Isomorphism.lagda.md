@@ -440,30 +440,44 @@ open ≲-Reasoning
 
 Show that every isomorphism implies an embedding.
 ```
-postulate
-  ≃-implies-≲ : ∀ {A B : Set}
+≃-implies-≲ : ∀ {A B : Set}
     → A ≃ B
       -----
     → A ≲ B
 ```
 
 ```
--- Your code goes here
+to (≃-implies-≲ A≃B) = to A≃B
+from (≃-implies-≲ A≃B) = from A≃B
+from∘to (≃-implies-≲ A≃B) = from∘to A≃B
 ```
 
 #### Exercise `_⇔_` (practice) {#iff}
 
 Define equivalence of propositions (also known as "if and only if") as follows:
 ```
+infix 0 _⇔_
 record _⇔_ (A B : Set) : Set where
   field
     to   : A → B
     from : B → A
+open _⇔_
 ```
 Show that equivalence is reflexive, symmetric, and transitive.
 
 ```
--- Your code goes here
+⇔-refl : ∀ {A : Set} → A ⇔ A
+to ⇔-refl x = x
+from ⇔-refl x = x
+
+⇔-sym : ∀ {A B : Set} → A ⇔ B → B ⇔ A
+to (⇔-sym A⇔B) = from A⇔B
+from (⇔-sym A⇔B) = to A⇔B
+
+⇔-trans : ∀ {A B C : Set} → A ⇔ B → B ⇔ C → A ⇔ C
+to (⇔-trans A⇔B B⇔C) = (to B⇔C) ∘ (to A⇔B)
+from (⇔-trans A⇔B B⇔C) = (from A⇔B) ∘ (from B⇔C) 
+
 ```
 
 #### Exercise `Bin-embedding` (stretch) {#Bin-embedding}
@@ -483,10 +497,49 @@ which satisfy the following property:
 
 Using the above, establish that there is an embedding of `ℕ` into `Bin`.
 ```
--- Your code goes here
+open import plfa.part1.Relations using (Bin; ⟨⟩; _O; _I; inc)
+import plfa.part1.Relations as B using (from; to)
+
+move-inc : ∀ (b : Bin) → B.from (inc b) ≡ suc (B.from b)
+move-inc ⟨⟩ = refl
+move-inc (b O) = refl
+move-inc (b I) = begin
+  B.from (inc (b I))
+  ≡⟨⟩
+  B.from (inc b) + B.from (inc b)
+  ≡⟨ Eq.cong₂ _+_ (move-inc b) (move-inc b) ⟩
+  suc (B.from b) + suc (B.from b)
+  ≡⟨⟩
+  suc (B.from b + suc (B.from b))
+  ≡⟨ cong suc (+-comm (B.from b) ( suc (B.from b))) ⟩
+  suc (suc (B.from b) + B.from b)
+  ≡⟨⟩
+  suc (suc (B.from b + B.from b))
+  ≡⟨⟩
+  suc (B.from (b I))
+  ∎
+
+ℕ≲Bin : ℕ ≲ Bin
+to ℕ≲Bin  = B.to
+from ℕ≲Bin = B.from
+from∘to ℕ≲Bin zero = refl
+from∘to ℕ≲Bin (suc x) = begin
+  from ℕ≲Bin (to ℕ≲Bin (suc x))
+  ≡⟨⟩
+  from ℕ≲Bin (inc (to ℕ≲Bin x))
+  ≡⟨ move-inc (to ℕ≲Bin x)  ⟩
+  suc (from ℕ≲Bin (to ℕ≲Bin x))
+  ≡⟨ cong suc (from∘to ℕ≲Bin x) ⟩
+  suc x
+  ∎
 ```
 
 Why do `to` and `from` not form an isomorphism?
+
+```
+-- Because we lose leading 0s in the bitstring - but if we only had
+-- canonical bitstrings, then it would, I think.
+```
 
 ## Standard library
 
