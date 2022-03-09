@@ -20,7 +20,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Product using (_×_)
+open import Data.Product using (_×_; _,_)
 open import plfa.part1.Isomorphism using (_≃_; extensionality)
 ```
 
@@ -101,7 +101,8 @@ We cannot show that `¬ ¬ A` implies `A`, but we can show that
   → ¬ ¬ ¬ A
     -------
   → ¬ A
-¬¬¬-elim ¬¬¬x  =  λ x → ¬¬¬x (¬¬-intro x)
+-- ¬¬¬-elim ¬¬¬x  =  λ x → ¬¬¬x (¬¬-intro x)
+¬¬¬-elim ¬¬¬x x = ¬¬¬x (¬¬-intro x)
 ```
 Let `¬¬¬x` be evidence of `¬ ¬ ¬ A`. We will show that assuming
 `A` leads to a contradiction, and hence `¬ A` must hold.
@@ -134,6 +135,9 @@ It is trivial to show distinct numbers are not equal:
 ```
 _ : 1 ≢ 2
 _ = λ()
+
+1≢2 : 1 ≢ 2
+1≢2 ()
 ```
 This is our first use of an absurd pattern in a lambda expression.
 The type `M ≡ N` is occupied exactly when `M` and `N` simplify to
@@ -193,9 +197,11 @@ Using negation, show that
 is irreflexive, that is, `n < n` holds for no `n`.
 
 ```
--- Your code goes here
-```
+open import plfa.part1.Relations using (_<_; z<s; s<s)
 
+<-irreflexive : ∀ {n : ℕ} → ¬ (n < n)
+<-irreflexive (s<s x) = <-irreflexive x
+```
 
 #### Exercise `trichotomy` (practice)
 
@@ -211,7 +217,26 @@ Here "exactly one" means that not only one of the three must hold,
 but that when one holds the negation of the other two must also hold.
 
 ```
--- Your code goes here
+data Trich (m n : ℕ) : Set where
+  forward :   m < n → ¬ m ≡ n → ¬ n < m → Trich m n
+  equal   : ¬ m < n →   m ≡ n → ¬ n < m → Trich m n
+  flipped : ¬ m < n → ¬ m ≡ n →   n < m → Trich m n
+
+open import Relation.Binary.PropositionalEquality using (cong)
+
+un-suc : ∀ (m n : ℕ) → suc m ≡ suc n → m ≡ n
+un-suc zero zero _ = refl
+un-suc (suc m) (suc .m) refl = refl
+
+-- this seems overcomplicated...
+<-trich : ∀ (m n : ℕ) → Trich m n
+<-trich zero zero = equal <-irreflexive refl <-irreflexive
+<-trich zero (suc n) = forward z<s (λ ()) (λ ())
+<-trich (suc m) zero = flipped (λ ()) (λ()) z<s
+<-trich (suc m) (suc n) with <-trich m n
+... | forward m<n ¬m≡n ¬n<m = forward (s<s m<n) (λ{ refl → ¬m≡n refl}) (λ{ (s<s n<m) → ¬n<m n<m})
+... | equal ¬m<n m≡n ¬n<m = equal (λ{ (s<s m<n) → ¬m<n m<n}) (cong suc m≡n) (λ{ (s<s n<m) → ¬n<m n<m})
+... | flipped ¬m<n ¬m≡n n<m = flipped (λ{ (s<s m<n) → ¬m<n m<n}) (λ{ refl → ¬m≡n refl}) (s<s n<m)
 ```
 
 #### Exercise `⊎-dual-×` (recommended)
@@ -224,9 +249,14 @@ version of De Morgan's Law.
 This result is an easy consequence of something we've proved previously.
 
 ```
--- Your code goes here
-```
+-- this is presumably somewhere in the stdlib?
+-- the version we proved previously is for our own version of ⊎
+postulate
+  →-distrib-⊎ : ∀ {A B C : Set} → (A ⊎ B → C) ≃ ((A → C) × (B → C))
 
+⊎-dual-x : ∀ {A B : Set} → ¬ (A ⊎ B) ≃ (¬ A) × (¬ B)
+⊎-dual-x = →-distrib-⊎  
+```
 
 Do we also have the following?
 
@@ -234,6 +264,23 @@ Do we also have the following?
 
 If so, prove; if not, can you give a relation weaker than
 isomorphism that relates the two sides?
+
+```
+-- so the generalized form of this is:
+-- _ : ∀ (A B C : Set) → (A × B → C) ≃ (A → C) ⊎ (B → C)
+-- which implies:
+-- _ : ∀ (A B C : Set) → (A × B → C) → (A → C) ⊎ (B → C)
+-- which is clearly not true... if I need both an A and a B to get a C, I can't give you a C with just an A or just a B.
+-- we can go the other way though:
+de-morgans : ∀ {A B C : Set} → (A → C) ⊎ (B → C) → A × B → C
+de-morgans (inj₁ A→C) (fst , snd) = A→C fst
+de-morgans (inj₂ B→C) (fst , snd) = B→C snd
+-- and in negation form:
+
+×-dual-⊎ : ∀ {A B : Set} → (¬ A) ⊎ (¬ B) → ¬ (A × B)
+×-dual-⊎ = de-morgans
+-- um... there might be some more stuff I can prove, but I don't think this is an embedding...
+```
 
 
 ## Intuitive and Classical logic
@@ -292,7 +339,7 @@ meaning that the negation of its negation is provable (and hence that
 its negation is never provable):
 ```
 em-irrefutable : ∀ {A : Set} → ¬ ¬ (A ⊎ ¬ A)
-em-irrefutable = λ k → k (inj₂ (λ x → k (inj₁ x)))
+em-irrefutable k = k (inj₂ λ x → k (inj₁ x))
 ```
 The best way to explain this code is to develop it interactively:
 
@@ -381,6 +428,10 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```
+excluded_middle : Set
+excluded_middle = ∀ {A : Set} → A ⊎ ¬A
+dne : Set
+
 -- Your code goes here
 ```
 
