@@ -241,7 +241,17 @@ Show that `A ⇔ B` as defined [earlier](/Isomorphism/#iff)
 is isomorphic to `(A → B) × (B → A)`.
 
 ```
--- Your code goes here
+open import plfa.part1.Isomorphism using (_⇔_)
+open _⇔_
+open _≃_
+
+⇔≃× : ∀ {A B : Set} → (A ⇔ B) ≃ ((A → B) × (B → A))
+to ⇔≃× record { to = to ; from = from } = ⟨ to , from ⟩
+-- co-pattern matching is cooool
+to (from ⇔≃× ⟨ A→B , B→A ⟩) = A→B
+from (from ⇔≃× ⟨ A→B , B→A ⟩) = B→A
+from∘to ⇔≃× record { to = to ; from = from } = refl
+to∘from ⇔≃× ⟨ A→B , B→A ⟩ = refl
 ```
 
 
@@ -454,7 +464,15 @@ commutative and associative _up to isomorphism_.
 Show sum is commutative up to isomorphism.
 
 ```
--- Your code goes here
+⊎-comm : ∀ {A B : Set} → A ⊎ B ≃ B ⊎ A
+to ⊎-comm (inj₁ x) = inj₂ x
+to ⊎-comm (inj₂ x) = inj₁ x
+from ⊎-comm (inj₁ x) = inj₂ x
+from ⊎-comm (inj₂ x) = inj₁ x
+from∘to ⊎-comm (inj₁ x) = refl
+from∘to ⊎-comm (inj₂ x) = refl
+to∘from ⊎-comm (inj₁ x) = refl
+to∘from ⊎-comm (inj₂ x) = refl
 ```
 
 #### Exercise `⊎-assoc` (practice)
@@ -462,7 +480,10 @@ Show sum is commutative up to isomorphism.
 Show sum is associative up to isomorphism.
 
 ```
--- Your code goes here
+⊎-assoc : ∀ {A B C : Set} → (A ⊎ B) ⊎ C → A ⊎ (B ⊎ C)
+⊎-assoc (inj₁ (inj₁ x)) = inj₁ x
+⊎-assoc (inj₁ (inj₂ x)) = inj₂ (inj₁ x)
+⊎-assoc (inj₂ x) = inj₂ (inj₂ x)
 ```
 
 ## False is empty
@@ -525,7 +546,11 @@ is the identity of sums _up to isomorphism_.
 Show empty is the left identity of sums up to isomorphism.
 
 ```
--- Your code goes here
+⊥-identityˡ : ∀ {A : Set} → ⊥ ⊎ A ≃ A
+to ⊥-identityˡ (inj₂ x) = x
+from ⊥-identityˡ x = inj₂ x
+from∘to ⊥-identityˡ (inj₂ x) = refl
+to∘from ⊥-identityˡ y = refl
 ```
 
 #### Exercise `⊥-identityʳ` (practice)
@@ -533,7 +558,14 @@ Show empty is the left identity of sums up to isomorphism.
 Show empty is the right identity of sums up to isomorphism.
 
 ```
--- Your code goes here
+⊥-identityʳ : ∀ {A : Set} → A ⊎ ⊥ ≃ A
+⊥-identityʳ {A} = ≃-begin
+  (A ⊎ ⊥)
+  ≃⟨ ⊎-comm ⟩
+  (⊥ ⊎ A)
+  ≃⟨ ⊥-identityˡ ⟩
+  A
+  ≃-∎
 ```
 
 ## Implication is function {#implication}
@@ -757,14 +789,20 @@ one of these laws is "more true" than the other.
 
 Show that the following property holds:
 ```
-postulate
-  ⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
+⊎-weak-× : ∀ {A B C : Set} → (A ⊎ B) × C → A ⊎ (B × C)
 ```
 This is called a _weak distributive law_. Give the corresponding
 distributive law, and explain how it relates to the weak version.
 
 ```
--- Your code goes here
+⊎-weak-× ⟨ inj₁ a , _ ⟩ = inj₁ a
+⊎-weak-× ⟨ inj₂ b , c ⟩ = inj₂ ⟨ b , c ⟩
+
+-- the corresponding law is ×-distrib-⊎
+-- I guess the difference is that in this version, we throw away the C in the inj₁ case?
+-- whereas in the distributive law, we always preserve the C?
+-- as a result, this one isn't even an embedding...?
+-- because there's no way to go from the inj₁ case on the right to the inj₁ case on the left
 ```
 
 
@@ -772,13 +810,18 @@ distributive law, and explain how it relates to the weak version.
 
 Show that a disjunct of conjuncts implies a conjunct of disjuncts:
 ```
-postulate
-  ⊎×-implies-×⊎ : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
+⊎×-implies-×⊎ : ∀ {A B C D : Set} → (A × B) ⊎ (C × D) → (A ⊎ C) × (B ⊎ D)
 ```
 Does the converse hold? If so, prove; if not, give a counterexample.
 
 ```
--- Your code goes here
+⊎×-implies-×⊎ (inj₁ ⟨ a , b ⟩) = ⟨ inj₁ a , inj₁ b ⟩
+⊎×-implies-×⊎ (inj₂ ⟨ c , d ⟩) = ⟨ inj₂ c , inj₂ d ⟩
+
+-- converse:
+-- ×⊎-implies-⊎× : ∀ {A B C D : Set} → (A ⊎ C) × (B ⊎ D) → (A × B) ⊎ (C × D)
+-- doesn't hold; counterexample: (A x D) on the left;
+-- there's nothing on the right we can map that to
 ```
 
 
