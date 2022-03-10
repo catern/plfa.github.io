@@ -20,7 +20,7 @@ open import Relation.Binary.PropositionalEquality using (_≡_; refl)
 open import Data.Nat using (ℕ; zero; suc)
 open import Data.Empty using (⊥; ⊥-elim)
 open import Data.Sum using (_⊎_; inj₁; inj₂)
-open import Data.Product using (_×_; _,_)
+open import Data.Product using (_×_; _,_; proj₁; proj₂)
 open import plfa.part1.Isomorphism using (_≃_; extensionality)
 ```
 
@@ -492,10 +492,13 @@ of two stable formulas is stable.
 ¬-stable : ∀ ( A : Set ) → Stable (¬ A)
 ¬-stable A ¬¬¬a a = (¬¬¬-elim ¬¬¬a) a
 
+open import Function using (_∘_)
+
 ¬×-stable : ∀ ( A B : Set ) → Stable A → Stable B → Stable (A × B)
 -- ¬×-stable A B sa sb ¬¬A×B = ⊥-elim (¬¬A×B λ A×B → {!!})
+
 ¬×-stable A B sa sb ¬¬A×B =
-  (sa (λ ¬a → ¬¬A×B (λ{ (a , _) → ¬a a}))) , (sb (λ ¬b → ¬¬A×B (λ{ (_ , b) → ¬b b})))
+  (sa (λ ¬a → ¬¬A×B (¬a ∘ proj₁))) , (sb (λ ¬b → ¬¬A×B (¬b ∘ proj₂)))
 ```
 
 ## Standard Prelude
