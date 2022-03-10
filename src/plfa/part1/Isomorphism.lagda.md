@@ -519,19 +519,23 @@ move-inc (b I) = begin
   suc (B.from (b I))
   ∎
 
+ℕ-roundtrip : ∀ ( n : ℕ ) → B.from (B.to n) ≡ n
+ℕ-roundtrip zero = refl
+ℕ-roundtrip (suc x) = begin
+  B.from (B.to (suc x))
+  ≡⟨⟩
+  B.from (inc (B.to x))
+  ≡⟨ move-inc (B.to x)  ⟩
+  suc (B.from (B.to x))
+  ≡⟨ cong suc (ℕ-roundtrip x) ⟩
+  suc x
+  ∎
+
+
 ℕ≲Bin : ℕ ≲ Bin
 to ℕ≲Bin  = B.to
 from ℕ≲Bin = B.from
-from∘to ℕ≲Bin zero = refl
-from∘to ℕ≲Bin (suc x) = begin
-  from ℕ≲Bin (to ℕ≲Bin (suc x))
-  ≡⟨⟩
-  from ℕ≲Bin (inc (to ℕ≲Bin x))
-  ≡⟨ move-inc (to ℕ≲Bin x)  ⟩
-  suc (from ℕ≲Bin (to ℕ≲Bin x))
-  ≡⟨ cong suc (from∘to ℕ≲Bin x) ⟩
-  suc x
-  ∎
+from∘to ℕ≲Bin n = ℕ-roundtrip n
 ```
 
 Why do `to` and `from` not form an isomorphism?
