@@ -428,11 +428,53 @@ Consider the following principles:
 Show that each of these implies all the others.
 
 ```
-excluded_middle : Set
-excluded_middle = ∀ {A : Set} → A ⊎ ¬A
-dne : Set
+exm : Set₁
+exm = ∀ (A : Set) → A ⊎ ¬ A
+dne : Set₁
+dne = ∀ (A : Set) → ¬ ¬ A → A
+peirce : Set₁
+peirce = ∀ (A B : Set) → ((A → B) → A) → A
+imp : Set₁
+imp = ∀ (A B : Set) → (A → B) → (¬ A) ⊎ B
+demorgan : Set₁
+demorgan = ∀ (A B : Set) → ¬ ((¬ A) × (¬ B)) → A ⊎ B
 
--- Your code goes here
+exm→dne : exm → dne
+exm→dne exm_p A ¬¬a with exm_p A
+... | inj₁ a = a
+... | inj₂ ¬a = ⊥-elim (¬¬a ¬a)
+
+exm→peirce : exm → peirce
+exm→peirce exm_p A B f with exm_p A
+... | inj₁ a = a
+... | inj₂ ¬a = f (λ a → ⊥-elim (¬a a))
+
+exm→imp : exm → imp
+exm→imp exm_p A B a→b with exm_p A
+... | inj₁ a = inj₂ (a→b a)
+... | inj₂ ¬a = inj₁ ¬a
+
+exm→demorgan : exm → demorgan
+exm→demorgan exm_p A B f with exm_p A | exm_p B
+... | inj₁  a | _ = inj₁ a
+... | inj₂ ¬a | inj₁  b = inj₂ b
+... | inj₂ ¬a | inj₂ ¬b = ⊥-elim (f (¬a , ¬b))
+
+dne→exm : dne → exm
+dne→exm dne_p A = dne_p (A ⊎ ¬ A) em-irrefutable
+
+peirce→dne : peirce → dne
+peirce→dne peircep A ¬¬a = peircep A ⊥ (λ k → ⊥-elim (¬¬a k))
+
+⊎-swap : ∀ {A B : Set} → A ⊎ B → B ⊎ A
+⊎-swap (inj₁ x) = inj₂ x
+⊎-swap (inj₂ y) = inj₁ y
+
+imp→exm : imp → exm
+imp→exm imp_p A = ⊎-swap (imp_p A A λ z → z)
+
+demorgan→exm : demorgan → exm
+demorgan→exm demorganp A = demorganp A (¬ A) λ{ (fst , snd) → snd fst}
 ```
 
 
@@ -447,7 +489,13 @@ Show that any negated formula is stable, and that the conjunction
 of two stable formulas is stable.
 
 ```
--- Your code goes here
+¬-stable : ∀ ( A : Set ) → Stable (¬ A)
+¬-stable A ¬¬¬a a = (¬¬¬-elim ¬¬¬a) a
+
+¬×-stable : ∀ ( A B : Set ) → Stable A → Stable B → Stable (A × B)
+-- ¬×-stable A B sa sb ¬¬A×B = ⊥-elim (¬¬A×B λ A×B → {!!})
+¬×-stable A B sa sb ¬¬A×B =
+  (sa (λ ¬a → ¬¬A×B (λ{ (a , _) → ¬a a}))) , (sb (λ ¬b → ¬¬A×B (λ{ (_ , b) → ¬b b})))
 ```
 
 ## Standard Prelude
