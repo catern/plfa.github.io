@@ -92,9 +92,15 @@ dependent product is ambiguous.
 
 Show that universals distribute over conjunction:
 ```
-postulate
-  ∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
-    (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+∀-distrib-× : ∀ {A : Set} {B C : A → Set} →
+  (∀ (x : A) → B x × C x) ≃ (∀ (x : A) → B x) × (∀ (x : A) → C x)
+
+∀-distrib-× = record {
+   to = λ f → ⟨ (λ a → proj₁ (f a)) , (λ x → proj₂ (f x)) ⟩ ;
+   from = λ{ ⟨ fst , snd ⟩ a → ⟨ fst a , snd a ⟩ };
+   from∘to = λ x → refl ;
+   to∘from = λ y → refl
+   }
 ```
 Compare this with the result (`→-distrib-×`) in
 Chapter [Connectives](/Connectives/).
@@ -103,11 +109,19 @@ Chapter [Connectives](/Connectives/).
 
 Show that a disjunction of universals implies a universal of disjunctions:
 ```
-postulate
-  ⊎∀-implies-∀⊎ : ∀ {A : Set} {B C : A → Set} →
-    (∀ (x : A) → B x) ⊎ (∀ (x : A) → C x) → ∀ (x : A) → B x ⊎ C x
+⊎∀-implies-∀⊎ : ∀ {A : Set} {B C : A → Set} →
+  (∀ (x : A) → B x) ⊎ (∀ (x : A) → C x) → ∀ (x : A) → B x ⊎ C x
+
+⊎∀-implies-∀⊎ (inj₁ f) a = inj₁ (f a)
+⊎∀-implies-∀⊎ (inj₂ f) a = inj₂ (f a)
 ```
 Does the converse hold? If so, prove; if not, explain why.
+```
+-- the converse doesn't hold because...
+-- the left side gives the user the ability to decide which of B or C they want,
+-- whereas the right lets the implementer make that decision.
+-- if the user decides they want B, but the right side gives us C, we're doomed.
+```
 
 
 #### Exercise `∀-×` (practice)
@@ -124,6 +138,21 @@ Show that `∀ (x : Tri) → B x` is isomorphic to `B aa × B bb × B cc`.
 Hint: you will need to postulate a version of extensionality that
 works for dependent functions.
 
+```
+postulate
+  ∀-extensionality : ∀ {A : Set} {B : A → Set} {f g : ∀ (x : A) → B x}
+    → (∀ (x : A) → f x ≡ g x)
+      -----------------------
+    → f ≡ g
+
+∀-× : ∀ (B : Tri → Set) → (∀ (x : Tri) → B x) ≃ B aa × B bb × B cc
+_≃_.to (∀-× B) f = ⟨ (f aa) , ⟨ (f bb) , (f cc) ⟩ ⟩
+_≃_.from (∀-× B) ⟨ Baa , ⟨ Bbb , Bcc ⟩ ⟩ aa = Baa
+_≃_.from (∀-× B) ⟨ Baa , ⟨ Bbb , Bcc ⟩ ⟩ bb = Bbb
+_≃_.from (∀-× B) ⟨ Baa , ⟨ Bbb , Bcc ⟩ ⟩ cc = Bcc
+_≃_.from∘to (∀-× B) f = ∀-extensionality λ{ aa → refl ; bb → refl ; cc → refl }
+_≃_.to∘from (∀-× B) ⟨ Baa , ⟨ Bbb , Bcc ⟩ ⟩ = refl
+```
 
 ## Existentials
 
@@ -248,26 +277,52 @@ establish the isomorphism is identical to what we wrote when discussing
 
 Show that existentials distribute over disjunction:
 ```
-postulate
-  ∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
-    ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ : ∀ {A : Set} {B C : A → Set} →
+  ∃[ x ] (B x ⊎ C x) ≃ (∃[ x ] B x) ⊎ (∃[ x ] C x)
+∃-distrib-⊎ =
+  record
+    { to = λ{ ⟨ a , inj₁ x ⟩ → inj₁ ⟨ a , x ⟩ ; ⟨ a , inj₂ y ⟩ → inj₂ ⟨ a , y ⟩}
+    ; from = λ{ (inj₁ ⟨ x , Bx ⟩) → ⟨ x , inj₁ Bx ⟩ ; (inj₂ ⟨ x , Cx ⟩) → ⟨ x , (inj₂ Cx) ⟩}
+    ; from∘to = λ{ ⟨ a , inj₁ ba ⟩ → refl ; ⟨ a , inj₂ ca ⟩ → refl}
+    ; to∘from = λ{ (inj₁ ⟨ x , x₁ ⟩) → refl ; (inj₂ ⟨ x , x₁ ⟩) → refl}
+    }
 ```
 
 #### Exercise `∃×-implies-×∃` (practice)
 
 Show that an existential of conjunctions implies a conjunction of existentials:
 ```
-postulate
-  ∃×-implies-×∃ : ∀ {A : Set} {B C : A → Set} →
-    ∃[ x ] (B x × C x) → (∃[ x ] B x) × (∃[ x ] C x)
+∃×-implies-×∃ : ∀ {A : Set} {B C : A → Set} →
+  ∃[ x ] (B x × C x) → (∃[ x ] B x) × (∃[ x ] C x)
+∃×-implies-×∃ ⟨ a , ⟨ Ba , Ca ⟩ ⟩ = ⟨ ⟨ a , Ba ⟩ , ⟨ a , Ca ⟩ ⟩
 ```
 Does the converse hold? If so, prove; if not, explain why.
+
+```
+-- no because we can't necessarily find a single x for which both B and C are true,
+-- just given a ∃[ x ] B x and ∃[ x ] C x.
+-- we'd need intersection types or something
+```
 
 #### Exercise `∃-⊎` (practice)
 
 Let `Tri` and `B` be as in Exercise `∀-×`.
 Show that `∃[ x ] B x` is isomorphic to `B aa ⊎ B bb ⊎ B cc`.
 
+```
+∃-⊎ : ∀ (B : Tri → Set) → ∃[ x ] B x ≃ B aa ⊎ B bb ⊎ B cc
+∃-⊎ B =
+  record
+  { to = λ{ ⟨ aa , Bx ⟩ → inj₁ Bx
+          ; ⟨ bb , Bx ⟩ → inj₂ (inj₁ Bx)
+          ; ⟨ cc , Bx ⟩ → inj₂ (inj₂ Bx)}
+  ; from = λ{ (inj₁ Baa) → ⟨ aa , Baa ⟩
+            ; (inj₂ (inj₁ Bbb)) → ⟨ bb , Bbb ⟩
+            ; (inj₂ (inj₂ Bcc)) → ⟨ cc , Bcc ⟩}
+  ; from∘to = λ{ ⟨ aa , x₁ ⟩ → refl ; ⟨ bb , x₁ ⟩ → refl ; ⟨ cc , x₁ ⟩ → refl}
+  ; to∘from = λ{ (inj₁ x) → refl ; (inj₂ (inj₁ x)) → refl ; (inj₂ (inj₂ y)) → refl}
+  }
+```
 
 ## An existential example
 
@@ -377,7 +432,52 @@ by `2 * m` and `2 * m + 1`?  Rewrite the proofs of `∃-even` and `∃-odd` when
 restated in this way.
 
 ```
--- Your code goes here
+even-∃' : ∀ {n : ℕ} → even n → ∃[ m ] (2 * m     ≡ n)
+odd-∃'  : ∀ {n : ℕ} →  odd n → ∃[ m ] (2 * m + 1 ≡ n)
+
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
+open Eq using (cong; sym)
+open import Data.Nat.Properties using (+-assoc; *-comm)
+open import plfa.part1.Induction using (+-identityʳ; +-suc)
+
+suc-+ʳ : ∀ {x : ℕ} → suc x ≡ x + 1
+suc-+ʳ {zero} = refl
+suc-+ʳ {suc x} = cong suc suc-+ʳ
+
+even-∃' even-zero = ⟨ zero , refl ⟩
+even-∃' (even-suc o) with odd-∃' o
+... | ⟨ x , refl ⟩ = ⟨ suc x , begin
+  suc (x + suc (x + 0))
+  ≡⟨ cong suc (cong (x +_) suc-+ʳ) ⟩
+  suc (x + ((x + 0) + 1))
+  ≡⟨ cong suc (sym (+-assoc x (x + 0) 1)) ⟩
+  suc (x + (x + 0) + 1)
+  ∎ ⟩
+odd-∃' (odd-suc e) with even-∃' e
+... | ⟨ x , refl ⟩ = ⟨ x , sym suc-+ʳ ⟩
+
+m*2≡+ : ∀ (m : ℕ) → m * 2 ≡ m + m
+m*2≡+ zero = refl
+m*2≡+ (suc m) = cong suc (begin
+  suc (m * 2)
+  ≡⟨ cong suc (m*2≡+ m) ⟩
+  suc (m + m)
+  ≡⟨ sym (+-suc m m) ⟩
+  m + suc m
+  ∎)
+
+∃-even' : ∀ {n : ℕ} → ∃[ m ] (2 * m     ≡ n) → even n
+∃-odd'  : ∀ {n : ℕ} → ∃[ m ] (2 * m + 1 ≡ n) →  odd n
+∃-even' ⟨ zero , refl ⟩ = even-zero
+∃-even' ⟨ suc m , refl ⟩ = even-suc (∃-odd' ⟨ m , begin
+  (m + (m + 0)) + 1
+  ≡⟨ +-assoc m (m + 0) 1 ⟩
+  m + ((m + 0) + 1)
+  ≡⟨ cong (m +_) (sym suc-+ʳ) ⟩
+  m + suc (m + 0)
+  ∎ ⟩)
+∃-odd' ⟨ m , refl ⟩ rewrite +-identityʳ m | sym (suc-+ʳ {m + m}) = odd-suc (∃-even ⟨ m , m*2≡+ m ⟩)
+-- they become harder because of insane bad normalization stuff something something
 ```
 
 #### Exercise `∃-+-≤` (practice)
@@ -386,7 +486,23 @@ Show that `y ≤ z` holds if and only if there exists a `x` such that
 `x + y ≡ z`.
 
 ```
--- Your code goes here
+open import Data.Nat using (_≤_; z≤n; s≤s)
+open import plfa.part1.Isomorphism using (_⇔_)
+open _⇔_
+
+∃-+-≤ : ∀ (y z : ℕ) → y ≤ z ⇔ (∃[ x ] (x + y ≡ z))
+-- ∃-+-≤ y z = {!!}
+to (∃-+-≤ zero z) z≤n = ⟨ z , +-identityʳ z ⟩
+to (∃-+-≤ (suc y) (suc z)) (s≤s y≤z) with to (∃-+-≤ y z) y≤z
+... | ⟨ x , x+y≡z ⟩ = ⟨ x , begin
+  x + suc y
+  ≡⟨ +-suc x y ⟩
+  suc (x + y)
+  ≡⟨ cong suc x+y≡z ⟩
+  suc z
+  ∎ ⟩
+from (∃-+-≤ zero z) ⟨ x , x+y≡z ⟩ = z≤n
+from (∃-+-≤ (suc y) .(x + suc y)) ⟨ x , refl ⟩ rewrite +-suc x y = s≤s (from (∃-+-≤ y (x + y)) ⟨ x , refl ⟩)
 ```
 
 
@@ -429,13 +545,27 @@ requires extensionality.
 
 Show that existential of a negation implies negation of a universal:
 ```
-postulate
-  ∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
+∃¬-implies-¬∀ : ∀ {A : Set} {B : A → Set}
     → ∃[ x ] (¬ B x)
       --------------
     → ¬ (∀ x → B x)
+
+∃¬-implies-¬∀ ⟨ a , ¬Ba ⟩ a→Ba = ¬Ba (a→Ba a)
 ```
 Does the converse hold? If so, prove; if not, explain why.
+```
+-- ¬∀-implies-∃¬ : ∀ {A : Set} {B : A → Set}
+--     → ¬ (∀ x → B x)
+--     → ∃[ x ] (¬ B x)
+
+-- it seems like it *should* hold,
+-- because a constructive proof of ¬ (∀ x → B x) should have a counterexample somehow.
+-- but it doesn't seem to hold,
+-- because we can't get a concrete x to serve as our counterexample
+-- and we need a concrete x because this existential doesn't hide x...
+-- but it seems like system F existentials which do hide x should be able to do it...
+-- since you can't actually touch x then...
+```
 
 
 #### Exercise `Bin-isomorphism` (stretch) {#Bin-isomorphism}
@@ -480,7 +610,32 @@ which is a corollary of `≡Can`.
     proj₁≡→Can≡ : {cb cb′ : ∃[ b ] Can b} → proj₁ cb ≡ proj₁ cb′ → cb ≡ cb′
 
 ```
--- Your code goes here
+open import plfa.part1.Relations using (Bin; ⟨⟩; _O; _I; inc; Can; One; to-can; can-roundtrip)
+import plfa.part1.Relations as B using (from; to)
+open import plfa.part1.Isomorphism using (ℕ-roundtrip)
+
+≡One : ∀ {b : Bin} (o o′ : One b) → o ≡ o′
+≡One One.⟨I⟩ One.⟨I⟩ = refl
+≡One (o O) (o' O) = cong _O (≡One o o')
+≡One (o I) (o' I) = cong _I (≡One o o')
+
+≡Can : ∀ {b : Bin} (cb cb′ : Can b) → cb ≡ cb′
+≡Can Can.zero Can.zero = refl
+≡Can (Can.lead x) (Can.lead x') = cong Can.lead (≡One x x')
+≡Can (Can.lead (() O)) Can.zero
+≡Can Can.zero (Can.lead (() O))
+
+proj1 : ∀ {A : Set} {P : A → Set} → Σ[ x ∈ A ] P x → A
+proj1 ⟨ a , _ ⟩ = a
+
+proj₁≡→Can≡ : ∀ {cb cb′ : Σ[ b ∈ Bin ] Can b} → (proj1 cb ≡ proj1 cb′) → cb ≡ cb′
+proj₁≡→Can≡ {⟨ x , cb ⟩} {⟨ .x , cb' ⟩} refl = cong ⟨ x ,_⟩ (≡Can cb cb')
+
+ℕ≃∃Can : ℕ ≃ (Σ[ b ∈ Bin ] Can b)
+_≃_.to ℕ≃∃Can n = ⟨ B.to n , to-can n ⟩
+_≃_.from ℕ≃∃Can ⟨ b , cb ⟩ = B.from b
+_≃_.from∘to ℕ≃∃Can = ℕ-roundtrip
+_≃_.to∘from ℕ≃∃Can ⟨ b , cb ⟩ = proj₁≡→Can≡ (can-roundtrip b cb)
 ```
 
 
