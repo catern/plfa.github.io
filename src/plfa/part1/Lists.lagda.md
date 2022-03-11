@@ -746,7 +746,13 @@ Show that map can be defined using fold:
 The proof requires extensionality.
 
 ```
--- Your code goes here
+map-x-is-foldr-x : ∀ {A B : Set} (f : A → B) (xs : List A)
+  → map f xs ≡ foldr (λ x xs → f x ∷ xs) [] xs
+map-x-is-foldr-x f [] = refl
+map-x-is-foldr-x f (x ∷ xs) = cong (f x ∷_) (map-x-is-foldr-x f xs)
+
+map-is-foldr : ∀ {A B : Set} (f : A → B) → map f ≡ foldr (λ x xs → f x ∷ xs) []
+map-is-foldr f = extensionality (map-x-is-foldr-x f)
 ```
 
 #### Exercise `fold-Tree` (practice)
@@ -757,7 +763,12 @@ Define a suitable fold function for the type of trees given earlier:
 
 
 ```
--- Your code goes here
+fold-Tree : ∀ {A B C : Set} → (A → C) → (C → B → C → C) → Tree A B → C
+fold-Tree f merge (leaf x) = f x
+fold-Tree f merge (node l x r) = merge fl x fr
+  where
+    fl = fold-Tree f merge l
+    fr = fold-Tree f merge r
 ```
 
 #### Exercise `map-is-fold-Tree` (practice)
@@ -765,7 +776,24 @@ Define a suitable fold function for the type of trees given earlier:
 Demonstrate an analogue of `map-is-foldr` for the type of trees.
 
 ```
--- Your code goes here
+map-is-fold-Tree-t : ∀ {A B C D : Set} (f : A → C) (g : B → D) (t : Tree A B)
+  → map-Tree f g t ≡
+    fold-Tree {A} {B} {Tree C D}
+    (λ z → leaf (f z))
+    (λ l x r → node l (g x) r)
+    t
+map-is-fold-Tree-t f g (leaf x) = refl
+map-is-fold-Tree-t f g (node l x r) =
+  Eq.cong₂ (λ l r → node l (g x) r)
+    (map-is-fold-Tree-t f g l)
+    (map-is-fold-Tree-t f g r)
+
+map-is-fold-Tree : ∀ {A B C D : Set} (f : A → C) (g : B → D)
+  → map-Tree f g ≡
+    fold-Tree {A} {B} {Tree C D}
+    (λ z → leaf (f z))
+    (λ l x r → node l (g x) r)
+map-is-fold-Tree f g = extensionality (map-is-fold-Tree-t f g)
 ```
 
 #### Exercise `sum-downFrom` (stretch)
@@ -785,6 +813,40 @@ Prove that the sum of the numbers `(n - 1) + ⋯ + 0` is
 equal to `n * (n ∸ 1) / 2`:
 
     sum (downFrom n) * 2 ≡ n * (n ∸ 1)
+
+```
+open import Data.Nat.Properties using
+  (*-distribʳ-+; *-comm)
+open import plfa.part1.Quantifiers using (m*2≡+)
+
+n+n∸1*n : ∀ (n : ℕ) → n + (n ∸ 1) * n ≡ n * n
+-- it's important to pattern match here,
+-- because the equation is true in different ways in each case
+n+n∸1*n zero = refl
+n+n∸1*n (suc n) = refl
+
+sum-downFrom : ∀ (n : ℕ) → sum (downFrom n) * 2 ≡ n * (n ∸ 1)
+sum-downFrom zero = refl
+sum-downFrom (suc n) = begin
+  sum (n ∷ downFrom n) * 2
+  ≡⟨⟩
+  (n + sum (downFrom n)) * 2
+  ≡⟨ *-distribʳ-+ 2 n (sum (downFrom n)) ⟩
+  n * 2 + sum (downFrom n) * 2
+  ≡⟨ cong (n * 2 +_) (sum-downFrom n) ⟩
+  n * 2 + n * (n ∸ 1)
+  ≡⟨ cong (_+ n * (n ∸ 1)) (m*2≡+ n) ⟩
+  n + n + n * (n ∸ 1)
+  ≡⟨ cong (n + n +_) (*-comm n (n ∸ 1)) ⟩
+  n + n + (n ∸ 1) * n
+  ≡⟨ +-assoc n n ((n ∸ 1) * n) ⟩
+  n + (n + (n ∸ 1) * n)
+  ≡⟨ cong (n +_) (n+n∸1*n n) ⟩
+  n + n * n
+  ≡⟨⟩
+  suc n * (suc n ∸ 1)
+  ∎
+```
 
 
 ## Monoids
@@ -887,8 +949,17 @@ operations associate to the left rather than the right.  For example:
     foldr _⊗_ e [ x , y , z ]  =  x ⊗ (y ⊗ (z ⊗ e))
     foldl _⊗_ e [ x , y , z ]  =  ((e ⊗ x) ⊗ y) ⊗ z
 
+    foldr _⊗_ e [ x , y , z ]  =  x ⊗ (y ⊗ z)
+    foldl _⊗_ e [ x , y , z ]  =  (x ⊗ y) ⊗ z
+
+# hmm mmaybe I do need to pull off two elements...
+
+
 ```
--- Your code goes here
+foldl : ∀ {A B : Set} → (B → A → B) → B → List A → B
+foldl _⊗_ e []        =  e
+foldl _⊗_ e (x ∷ xs)  = foldl _⊗_ (e ⊗ x) xs
+-- foldl _⊗_ e xs = foldr (λ b a → a ⊗ b) e (reverse xs)
 ```
 
 
@@ -898,7 +969,56 @@ Show that if `_⊗_` and `e` form a monoid, then `foldr _⊗_ e` and
 `foldl _⊗_ e` always compute the same result.
 
 ```
--- Your code goes here
+-- I use the IH twice... this seems like I'm doing something wrong...
+foldl-monoid : ∀ {A : Set} (_⊗_ : A → A → A) (e : A) → IsMonoid _⊗_ e →
+  ∀ (xs : List A) (y : A) → foldl _⊗_ y xs ≡ y ⊗ foldl _⊗_ e xs
+foldl-monoid _⊗_ e ⊗-monoid [] y = sym (identityʳ ⊗-monoid y)
+foldl-monoid _⊗_ e ⊗-monoid (x ∷ xs) y = begin
+  foldl _⊗_ y (x ∷ xs)
+  ≡⟨⟩
+  foldl _⊗_ (y ⊗ x) xs
+  ≡⟨ foldl-monoid _⊗_ e ⊗-monoid xs (y ⊗ x) ⟩
+  (y ⊗ x) ⊗ foldl _⊗_ e xs
+  ≡⟨ assoc ⊗-monoid y x (foldl _⊗_ e xs) ⟩
+  y ⊗ (x ⊗ foldl _⊗_ e xs)
+  ≡⟨ cong (y ⊗_) (sym (foldl-monoid _⊗_ e ⊗-monoid xs x)) ⟩
+  y ⊗ foldl _⊗_ x xs
+  ≡⟨ cong (λ x → y ⊗ foldl _⊗_ x xs) (sym (identityˡ ⊗-monoid x)) ⟩
+  y ⊗ foldl _⊗_ (e ⊗ x) xs
+  ≡⟨⟩
+  y ⊗ foldl _⊗_ e (x ∷ xs)
+  ∎
+
+foldr-monoid-foldl : ∀ {A : Set} (_⊗_ : A → A → A) (e : A) (xs : List A) → IsMonoid _⊗_ e
+  → foldr _⊗_ e xs ≡ foldl _⊗_ e xs
+foldr-monoid-foldl _⊗_ e [] ⊗-monoid = refl
+foldr-monoid-foldl _⊗_ e (x ∷ xs) ⊗-monoid = begin
+  x ⊗ foldr _⊗_ e xs
+  ≡⟨ cong (x ⊗_) (foldr-monoid-foldl _⊗_ e xs ⊗-monoid) ⟩
+  x ⊗ (foldl _⊗_ e xs)
+  ≡⟨ cong (_⊗ foldl _⊗_ e xs) (sym (identityˡ ⊗-monoid x)) ⟩
+  (e ⊗ x) ⊗ (foldl _⊗_ e xs)
+  ≡⟨ sym (foldl-monoid _⊗_ e ⊗-monoid xs (e ⊗ x)) ⟩
+  foldl _⊗_ (e ⊗ x) xs
+  ≡⟨⟩
+  foldl _⊗_ e (x ∷ xs)
+  ∎
+-- sooo we definitely need to show...
+-- something that's more generic in e? that doesn't require it to be the identity..
+-- we need that for foldl...
+
+-- foldl _⊗_ (x ∷ xs) xs ≡ foldl _⊗_ (e ⊗ x) xs
+-- sure but that's just the definition...
+
+-- oh!! replace e with foldl in foldr and vicce versa???
+-- using that combine-two-folds thing maybe?
+-- oh! we put everything into the e except one element...
+-- then use IH..
+-- then equational reasoning on the rest
+-- um... specifically what we need this for is foldl...
+-- because that happens automatically with foldr.
+-- ya okay so let's relate foldl and ++...
+-- ah no got a hint to do foldl-monoid
 ```
 
 
@@ -988,6 +1108,11 @@ possible evidence for `3 ≡ 0`, `3 ≡ 1`, `3 ≡ 0`, `3 ≡ 2`, and
 A predicate holds for every element of one list appended to another if and
 only if it holds for every element of both lists:
 ```
+-- my edit to make this easier to prove
+All-fst-∷ : ∀ {A : Set} {P : A → Set} {xs ys : List A} {x : A} →
+  P x → (All P xs × All P ys) → (All P (x ∷ xs) × All P ys)
+All-fst-∷ Px ⟨ fst , snd ⟩ = ⟨ Px ∷ fst , snd ⟩
+
 All-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
   All P (xs ++ ys) ⇔ (All P xs × All P ys)
 All-++-⇔ xs ys =
@@ -1000,8 +1125,7 @@ All-++-⇔ xs ys =
   to : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
     All P (xs ++ ys) → (All P xs × All P ys)
   to [] ys Pys = ⟨ [] , Pys ⟩
-  to (x ∷ xs) ys (Px ∷ Pxs++ys) with to xs ys Pxs++ys
-  ... | ⟨ Pxs , Pys ⟩ = ⟨ Px ∷ Pxs , Pys ⟩
+  to (x ∷ xs) ys (Px ∷ Pxs++ys) = All-fst-∷ Px (to xs ys Pxs++ys)
 
   from : ∀ { A : Set} {P : A → Set} (xs ys : List A) →
     All P xs × All P ys → All P (xs ++ ys)
@@ -1016,7 +1140,24 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 `_∈_` and `_++_`.
 
 ```
--- Your code goes here
+open import Data.Sum using (_⊎_; inj₁; inj₂)
+open _⇔_
+
+Any-++-⇔ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+  Any P (xs ++ ys) ⇔ Any P xs ⊎ Any P ys 
+to (Any-++-⇔ [] ys) Pys = inj₂ Pys
+to (Any-++-⇔ (x ∷ xs) ys) (here Px) = inj₁ (here Px)
+to (Any-++-⇔ (x ∷ xs) ys) (there Pxs++ys) with to (Any-++-⇔ xs ys) Pxs++ys
+... | inj₁ Pxs = inj₁ (there Pxs)
+... | inj₂ Pys = inj₂ Pys
+from (Any-++-⇔ [] ys) (inj₂ Pys) = Pys
+from (Any-++-⇔ (x ∷ xs) ys) (inj₁ (here Px)) = here Px
+from (Any-++-⇔ (x ∷ xs) ys) (inj₁ (there Pxs)) = there (from (Any-++-⇔ xs ys) (inj₁ Pxs))
+from (Any-++-⇔ (x ∷ xs) ys) (inj₂ Pys) = there (from (Any-++-⇔ xs ys) (inj₂ Pys))
+
+∈-++ : ∀ {A : Set} (x : A) (xs ys : List A) →
+  (x ∈ xs ++ ys) ⇔ (x ∈ xs ⊎ x ∈ ys)
+∈-++ x xs ys = Any-++-⇔ xs ys
 ```
 
 #### Exercise `All-++-≃` (stretch)
@@ -1024,7 +1165,30 @@ replacement for `_×_`.  As a consequence, demonstrate an equivalence relating
 Show that the equivalence `All-++-⇔` can be extended to an isomorphism.
 
 ```
--- Your code goes here
+open _≃_
+All-++-≃ : ∀ {A : Set} {P : A → Set} (xs ys : List A) →
+  All P (xs ++ ys) ≃ (All P xs × All P ys)
+to (All-++-≃ xs ys) = to (All-++-⇔ xs ys)
+from (All-++-≃ xs ys) = from (All-++-⇔ xs ys)
+from∘to (All-++-≃ [] ys) Pys = refl
+from∘to (All-++-≃ (x ∷ xs) ys) (Px ∷ Pxsys) = cong (Px ∷_) (from∘to (All-++-≃ xs ys) Pxsys)
+to∘from (All-++-≃ [] ys) ⟨ [] , Pys ⟩ = refl
+to∘from (All-++-≃ (x ∷ xs) ys) ⟨ Px ∷ Pxs , Pys ⟩ = begin
+  to (All-++-≃ (x ∷ xs) ys) (from (All-++-≃ (x ∷ xs) ys) ⟨ Px ∷ Pxs , Pys ⟩)
+  ≡⟨⟩
+  to (All-++-≃ (x ∷ xs) ys)
+     (Px ∷ from (All-++-≃ xs ys) ⟨ Pxs , Pys ⟩)
+  ≡⟨⟩
+  to (All-++-≃ (x ∷ xs) ys)
+     (Px ∷ from (All-++-≃ xs ys) ⟨ Pxs , Pys ⟩)
+  ≡⟨⟩
+  All-fst-∷ Px
+    (to (All-++-≃ xs ys) (from (All-++-≃ xs ys) ⟨ Pxs , Pys ⟩))
+  ≡⟨ cong (All-fst-∷ Px) (to∘from (All-++-≃ xs ys) ⟨ Pxs , Pys ⟩) ⟩
+  All-fst-∷ Px ⟨ Pxs , Pys ⟩
+  ≡⟨⟩
+  ⟨ Px ∷ Pxs , Pys ⟩
+  ∎
 ```
 
 #### Exercise `¬Any⇔All¬` (recommended)
@@ -1045,7 +1209,20 @@ If so, prove; if not, explain why.
 
 
 ```
--- Your code goes here
+¬Any⇔All¬ : ∀ {A : Set} {P : A → Set} (xs : List A) →
+  ¬ (Any P) xs ⇔ All (¬_ ∘ P) xs
+to (¬Any⇔All¬ []) x = []
+from (¬Any⇔All¬ []) [] ()
+to (¬Any⇔All¬ (x ∷ xs)) ¬Px∷xs =
+  (λ Px → ¬Px∷xs (here Px))
+  ∷ to (¬Any⇔All¬ xs) λ
+    { (here Px) → ¬Px∷xs (there (here Px))
+    ; (there Pxs) → ¬Px∷xs (there (there Pxs)) }
+from (¬Any⇔All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs) (here Px) = ¬Px Px
+from (¬Any⇔All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs) (there APxs) = from (¬Any⇔All¬ xs) ¬Pxs APxs
+
+-- we don't have that other form, no!
+-- because, ¬ (All P) [] is inhabited, but Any (¬ ∘ P) [] is not!
 ```
 
 #### Exercise `¬Any≃All¬` (stretch)
