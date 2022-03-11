@@ -353,6 +353,11 @@ reverse of the second appended to the reverse of the first:
 
     reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
 
+```
+reverse-++-distrib : ∀ {A : Set} (xs ys : List A) → reverse (xs ++ ys) ≡ reverse ys ++ reverse xs
+reverse-++-distrib [] ys rewrite ++-identityʳ (reverse ys) = refl
+reverse-++-distrib (x ∷ xs) ys rewrite reverse-++-distrib xs ys = ++-assoc (reverse ys) (reverse xs) [ x ]
+```
 
 #### Exercise `reverse-involutive` (recommended)
 
@@ -360,6 +365,20 @@ A function is an _involution_ if when applied twice it acts
 as the identity function.  Show that reverse is an involution:
 
     reverse (reverse xs) ≡ xs
+
+```
+reverse-involutive : ∀ {A : Set} (xs : List A) → reverse (reverse xs) ≡ xs
+reverse-involutive [] = refl
+reverse-involutive (x ∷ xs) = begin
+  reverse (reverse xs ++ [ x ])
+  ≡⟨ reverse-++-distrib (reverse xs) [ x ] ⟩
+  reverse [ x ] ++ reverse (reverse xs)
+  ≡⟨⟩
+  x ∷ reverse (reverse xs)
+  ≡⟨ cong (x ∷_) (reverse-involutive xs) ⟩
+  x ∷ xs
+  ∎
+```
 
 
 ## Faster reverse
@@ -528,7 +547,27 @@ Prove that the map of a composition is equal to the composition of two maps:
 The last step of the proof requires extensionality.
 
 ```
--- Your code goes here
+open import plfa.part1.Isomorphism using (extensionality)
+open Eq using (cong-app)
+
+map-compose-app : ∀ {A B C : Set} (f : A → B) (g : B → C) (xs : List A) → map (g ∘ f) xs ≡ (map g ∘ map f) xs
+map-compose-app f g [] = refl
+map-compose-app f g (x ∷ xs) = begin
+  (g ∘ f) x ∷ map (g ∘ f) xs
+  ≡⟨ cong ((g ∘ f) x ∷_) (map-compose-app f g xs) ⟩
+  (g ∘ f) x ∷ (map g ∘ map f) xs
+  ≡⟨⟩
+  g (f x) ∷ map g (map f xs)
+  ≡⟨⟩
+  map g (f x ∷ map f xs)
+  ≡⟨⟩
+  map g (map f (x ∷ xs))
+  ≡⟨⟩
+  (map g ∘ map f) (x ∷ xs)
+  ∎
+map-compose : ∀ {A B C : Set} (f : A → B) (g : B → C) → map (g ∘ f) ≡ map g ∘ map f
+-- we have to have this separate helper, otherwise we won't terminate
+map-compose f g = extensionality (map-compose-app f g)
 ```
 
 #### Exercise `map-++-distribute` (practice)
@@ -538,7 +577,9 @@ Prove the following relationship between map and append:
     map f (xs ++ ys) ≡ map f xs ++ map f ys
 
 ```
--- Your code goes here
+map-++-distribute : ∀ {A B : Set} (f : A → B) (xs ys : List A) → map f (xs ++ ys) ≡ map f xs ++ map f ys
+map-++-distribute f [] ys = refl
+map-++-distribute f (x ∷ xs) ys = cong (f x ∷_) (map-++-distribute f xs ys)
 ```
 
 #### Exercise `map-Tree` (practice)
@@ -555,7 +596,9 @@ Define a suitable map operator over trees:
     map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
 
 ```
--- Your code goes here
+map-Tree : ∀ {A B C D : Set} → (A → C) → (B → D) → Tree A B → Tree C D
+map-Tree f g (leaf x) = leaf (f x)
+map-Tree f g (node l x r) = node (map-Tree f g l) (g x) (map-Tree f g r)
 ```
 
 ## Fold {#Fold}
@@ -637,7 +680,11 @@ For example:
     product [ 1 , 2 , 3 , 4 ] ≡ 24
 
 ```
--- Your code goes here
+product : List ℕ → ℕ
+product = foldr _*_ 1
+
+_ : product [ 1 , 2 , 3 , 4 ] ≡ 24
+_ = refl
 ```
 
 #### Exercise `foldr-++` (recommended)
@@ -647,7 +694,20 @@ Show that fold and append are related as follows:
     foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
 
 ```
--- Your code goes here
+foldr-++ : ∀ {A B : Set} (_⊗_ : A → B → B) (e : B) (xs ys : List A) →
+  foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
+foldr-++ _⊗_ e [] ys = refl
+foldr-++ _⊗_ e (x ∷ xs) ys = begin
+  foldr _⊗_ e ((x ∷ xs) ++ ys)
+  ≡⟨⟩
+  foldr _⊗_ e (x ∷ (xs ++ ys))
+  ≡⟨⟩
+  x ⊗ (foldr _⊗_ e (xs ++ ys))
+  ≡⟨ cong (x ⊗_) (foldr-++ _⊗_ e xs ys) ⟩
+  x ⊗ (foldr _⊗_ (foldr _⊗_ e ys) xs)
+  ≡⟨⟩
+  foldr _⊗_ (foldr _⊗_ e ys) (x ∷ xs)
+  ∎
 ```
 
 #### Exercise `foldr-∷` (practice)
@@ -660,9 +720,21 @@ Show as a consequence of `foldr-++` above that
 
     xs ++ ys ≡ foldr _∷_ ys xs
 
-
 ```
--- Your code goes here
+foldr-∷ : ∀ {A : Set} (xs : List A) → foldr _∷_ [] xs ≡ xs
+foldr-∷ [] = refl
+foldr-∷ (x ∷ xs) = cong (x ∷_) (foldr-∷ xs)
+
+foldr-++-∷ : ∀ {A : Set} (xs ys : List A) → xs ++ ys ≡ foldr _∷_ ys xs
+foldr-++-∷ xs ys = begin
+  xs ++ ys
+  ≡⟨ sym (foldr-∷ (xs ++ ys)) ⟩
+  foldr _∷_ [] (xs ++ ys)
+  ≡⟨ foldr-++ _∷_ [] xs ys ⟩
+  foldr _∷_ (foldr _∷_ [] ys) xs
+  ≡⟨ cong (λ ys → foldr _∷_ ys xs) (foldr-∷ ys) ⟩
+  foldr _∷_ ys xs
+  ∎
 ```
 
 #### Exercise `map-is-foldr` (practice)
@@ -790,11 +862,8 @@ foldr-monoid _⊗_ e ⊗-monoid (x ∷ xs) y =
 ```
 
 In a previous exercise we showed the following.
-```
-postulate
-  foldr-++ : ∀ {A : Set} (_⊗_ : A → A → A) (e : A) (xs ys : List A) →
-    foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
-```
+  -- foldr-++ : ∀ {A : Set} (_⊗_ : A → A → A) (e : A) (xs ys : List A) →
+  --   foldr _⊗_ e (xs ++ ys) ≡ foldr _⊗_ (foldr _⊗_ e ys) xs
 
 As a consequence, using a previous exercise, we have the following:
 ```
