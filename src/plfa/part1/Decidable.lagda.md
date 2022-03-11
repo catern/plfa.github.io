@@ -295,8 +295,19 @@ trouble normalising evidence of negation.)
 
 Analogous to the function above, define a function to decide strict inequality:
 ```
-postulate
-  _<?_ : ∀ (m n : ℕ) → Dec (m < n)
+¬n<z : ∀ {m : ℕ} → ¬ (m < zero)
+¬n<z ()
+
+¬s<s : ∀ {m n : ℕ} → ¬ (m < n) → ¬ (suc m < suc n)
+¬s<s ¬m<n (s<s m<n) = ¬m<n m<n
+
+_<?_ : ∀ (m n : ℕ) → Dec (m < n)
+zero <? zero = no ¬n<z
+zero <? suc n = yes z<s
+suc m <? zero = no ¬n<z
+suc m <? suc n with m <? n
+... | yes m<n = yes (s<s m<n)
+... | no ¬m<n = no (¬s<s ¬m<n)
 ```
 
 ```
@@ -307,14 +318,20 @@ postulate
 
 Define a function to decide whether two naturals are equal:
 ```
-postulate
-  _≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
-```
+z≢s : ∀ {m : ℕ} → ¬ 0 ≡ suc m
+z≢s ()
 
-```
--- Your code goes here
-```
+s≢z : ∀ {m : ℕ} → ¬ suc m ≡ 0
+s≢z ()
 
+_≡ℕ?_ : ∀ (m n : ℕ) → Dec (m ≡ n)
+zero ≡ℕ? zero = yes refl
+zero ≡ℕ? suc n = no z≢s
+suc m ≡ℕ? zero = no s≢z
+suc m ≡ℕ? suc n with m ≡ℕ? n
+... | yes m≡n = yes (Eq.cong suc m≡n)
+... | no ¬m≡n = no (λ{ refl → ¬m≡n refl })
+```
 
 ## Decidables from booleans, and booleans from decidables
 
@@ -539,10 +556,21 @@ on which matches; but either is equally valid.
 
 Show that erasure relates corresponding boolean and decidable operations:
 ```
-postulate
-  ∧-× : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∧ ⌊ y ⌋ ≡ ⌊ x ×-dec y ⌋
-  ∨-⊎ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∨ ⌊ y ⌋ ≡ ⌊ x ⊎-dec y ⌋
-  not-¬ : ∀ {A : Set} (x : Dec A) → not ⌊ x ⌋ ≡ ⌊ ¬? x ⌋
+∧-× : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∧ ⌊ y ⌋ ≡ ⌊ x ×-dec y ⌋
+∧-× (yes x) (yes y) = refl
+∧-× (no x) (yes y) = refl
+∧-× (yes x) (no y) = refl
+∧-× (no x) (no y) = refl
+∨-⊎ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ ∨ ⌊ y ⌋ ≡ ⌊ x ⊎-dec y ⌋
+∨-⊎ (yes x) (yes y) = refl
+∨-⊎ (yes x) (no y) = refl
+∨-⊎ (no x) (yes y) = refl
+∨-⊎ (no x) (no y) = refl
+not-¬ : ∀ {A : Set} (x : Dec A) → not ⌊ x ⌋ ≡ ⌊ ¬? x ⌋
+not-¬ (yes x) = refl
+not-¬ (no x) = refl
+
+-- lol
 ```
 
 #### Exercise `iff-erasure` (recommended)
@@ -551,14 +579,23 @@ Give analogues of the `_⇔_` operation from
 Chapter [Isomorphism](/Isomorphism/#iff),
 operation on booleans and decidables, and also show the corresponding erasure:
 ```
-postulate
-  _iff_ : Bool → Bool → Bool
-  _⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
-  iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
-```
+_iff_ : Bool → Bool → Bool
+true iff true = true
+true iff false = false
+false iff true = false
+false iff false = true
 
-```
--- Your code goes here
+_⇔-dec_ : ∀ {A B : Set} → Dec A → Dec B → Dec (A ⇔ B)
+yes a ⇔-dec yes b = yes (record { to = λ _ → b ; from = λ x → a })
+yes a ⇔-dec no ¬b = no λ z → ¬b (_⇔_.to z a)
+no ¬a ⇔-dec yes b = no λ z → ¬a (_⇔_.from z b)
+no ¬a ⇔-dec no ¬b = yes (record { to = λ x → ⊥-elim (¬a x) ; from = λ x → ⊥-elim (¬b x) })
+
+iff-⇔ : ∀ {A B : Set} (x : Dec A) (y : Dec B) → ⌊ x ⌋ iff ⌊ y ⌋ ≡ ⌊ x ⇔-dec y ⌋
+iff-⇔ (yes x) (yes y) = refl
+iff-⇔ (yes x) (no y) = refl
+iff-⇔ (no x) (yes y) = refl
+iff-⇔ (no x) (no y) = refl
 ```
 
 ## Proof by reflection {#proof-by-reflection}
@@ -633,6 +670,19 @@ True Q = T ⌊ Q ⌋
 
 Give analogues of `True`, `toWitness`, and `fromWitness` which work with *negated* properties. Call these `False`, `toWitnessFalse`, and `fromWitnessFalse`.
 
+```
+False : ∀ {Q} → Dec Q → Set
+False Q = T (not ⌊ Q ⌋)
+
+toWitnessFalse : ∀ {A : Set} {D : Dec A} → T (not ⌊ D ⌋) → ¬ A
+toWitnessFalse {A} {yes x} ()
+toWitnessFalse {A} {no ¬x} tt = ¬x
+
+fromWitnessFalse : ∀ {A : Set} {D : Dec A} → ¬ A → T (not ⌊ D ⌋)
+fromWitnessFalse {A} {yes x} ¬x = ¬x x
+fromWitnessFalse {A} {no ¬x} _  = tt
+
+```
 
 ## Standard Library
 
