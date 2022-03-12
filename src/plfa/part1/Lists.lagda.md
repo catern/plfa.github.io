@@ -1214,10 +1214,7 @@ If so, prove; if not, explain why.
 to (¬Any⇔All¬ []) x = []
 from (¬Any⇔All¬ []) [] ()
 to (¬Any⇔All¬ (x ∷ xs)) ¬Px∷xs =
-  (λ Px → ¬Px∷xs (here Px))
-  ∷ to (¬Any⇔All¬ xs) λ
-    { (here Px) → ¬Px∷xs (there (here Px))
-    ; (there Pxs) → ¬Px∷xs (there (there Pxs)) }
+  ¬Px∷xs ∘ here ∷ to (¬Any⇔All¬ xs) (¬Px∷xs ∘ there)
 from (¬Any⇔All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs) (here Px) = ¬Px Px
 from (¬Any⇔All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs) (there APxs) = from (¬Any⇔All¬ xs) ¬Pxs APxs
 
@@ -1231,7 +1228,33 @@ Show that the equivalence `¬Any⇔All¬` can be extended to an isomorphism.
 You will need to use extensionality.
 
 ```
--- Your code goes here
+¬Any≃All¬ : ∀ {A : Set} {P : A → Set} (xs : List A) →
+  ¬ (Any P) xs ≃ All (¬_ ∘ P) xs
+to (¬Any≃All¬ xs) = to (¬Any⇔All¬ xs)
+from (¬Any≃All¬ xs) = from (¬Any⇔All¬ xs)
+from∘to (¬Any≃All¬ []) ¬AP = extensionality (λ())
+from∘to (¬Any≃All¬ (x ∷ xs)) ¬AP = extensionality (
+  λ { (here x) → refl
+    ; (there APxs) → begin
+      (from ≃xxs ((to ≃xxs) ¬AP)) (there APxs)
+      ≡⟨⟩
+      (from ≃xs (to ≃xs (¬AP ∘ there))) APxs
+      ≡⟨ cong-app (from∘to ≃xs (¬AP ∘ there)) APxs ⟩
+      (¬AP ∘ there) APxs
+      ≡⟨⟩
+      ¬AP (there APxs)
+    ∎})
+  where
+    ≃xxs = ¬Any≃All¬ (x ∷ xs)
+    ≃xs = ¬Any≃All¬ xs
+to∘from (¬Any≃All¬ []) = λ{ [] → refl}
+to∘from (¬Any≃All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs) = begin
+  to (¬Any≃All¬ (x ∷ xs)) (from (¬Any≃All¬ (x ∷ xs)) (¬Px ∷ ¬Pxs))
+  ≡⟨⟩
+  ¬Px ∷ to (¬Any⇔All¬ xs) (from (¬Any⇔All¬ xs) ¬Pxs)
+  ≡⟨ cong (¬Px ∷_) (to∘from (¬Any≃All¬ xs) ¬Pxs) ⟩
+  ¬Px ∷ ¬Pxs
+  ∎
 ```
 
 #### Exercise `All-∀` (practice)
@@ -1239,7 +1262,27 @@ You will need to use extensionality.
 Show that `All P xs` is isomorphic to `∀ x → x ∈ xs → P x`.
 
 ```
--- You code goes here
+open import plfa.part1.Isomorphism using (∀-extensionality)
+
+All-∀ : ∀ {A : Set} {P : A → Set } (xs : List A) →
+  All P xs ≃ (∀ x → x ∈ xs → P x)
+to (All-∀ []) [] x ()
+to (All-∀ (x ∷ _ )) (Px ∷ Pxs) .x (here refl) = Px
+to (All-∀ (_ ∷ xs)) (Px ∷ Pxs)  x (there x∈xs) = to (All-∀ xs) Pxs x x∈xs
+from (All-∀ []) f = []
+from (All-∀ (x ∷ xs)) f = (f x (here refl)) ∷ from (All-∀ xs) (λ x y → f x (there y))
+from∘to (All-∀ []) [] = refl
+from∘to (All-∀ (_ ∷ xs)) (x ∷ Pxs) = cong (x ∷_) (from∘to (All-∀ xs) Pxs)
+to∘from (All-∀ []) f = ∀-extensionality (λ elem → extensionality (λ()))
+to∘from (All-∀ (x ∷ xs)) f = ∀-extensionality (λ elem → extensionality (
+  λ{ (here refl) → refl ; (there elem∈xs) → begin
+  (to (All-∀ xs) (from (All-∀ xs) (λ elem elem∈xs → f elem (there elem∈xs))))
+   elem elem∈xs
+  ≡⟨ cong-app (cong-app (to∘from (All-∀ xs) (λ elem elem∈xs → f elem (there elem∈xs))) elem) elem∈xs ⟩
+  (λ elem elem∈xs → f elem (there elem∈xs)) elem elem∈xs
+  ≡⟨⟩
+  f elem (there elem∈xs)
+  ∎}))
 ```
 
 
@@ -1248,7 +1291,21 @@ Show that `All P xs` is isomorphic to `∀ x → x ∈ xs → P x`.
 Show that `Any P xs` is isomorphic to `∃[ x ] (x ∈ xs × P x)`.
 
 ```
--- You code goes here
+Any-∃ : ∀ {A : Set} {P : A → Set } (xs : List A) →
+  Any P xs ≃ ∃[ x ] ( x ∈ xs × P x)
+
+add-there : ∀ {A : Set} {P : A → Set } {xs : List A} (y : A) →
+  ∃[ x ] ( x ∈ xs × P x) → ∃[ x ] ( x ∈ (y ∷ xs) × P x)
+add-there y ⟨ x , ⟨ x∈xs , Px ⟩ ⟩ = ⟨ x , ⟨ (there x∈xs) , Px ⟩ ⟩
+
+to (Any-∃ (x ∷ _)) (here Px) = ⟨ x , ⟨ (here refl) , Px ⟩ ⟩
+to (Any-∃ (y ∷ xs)) (there APxs) = add-there y (to (Any-∃ xs) APxs)
+from (Any-∃ (x ∷ xs)) ⟨ .x , ⟨ here refl , Px ⟩ ⟩ = here Px
+from (Any-∃ (y ∷ xs)) ⟨ x , ⟨ there x∈xs , Px ⟩ ⟩ = there (from (Any-∃ xs) ⟨ x , ⟨ x∈xs , Px ⟩ ⟩)
+from∘to (Any-∃ .(_ ∷ _)) (here x) = refl
+from∘to (Any-∃ (x ∷ xs)) (there APxs) = cong there (from∘to (Any-∃ xs) APxs)
+to∘from (Any-∃ (x ∷ xs)) ⟨ .x , ⟨ here refl , Px ⟩ ⟩ = refl
+to∘from (Any-∃ (y ∷ xs)) ⟨ x , ⟨ there x∈xs , Px ⟩ ⟩ = cong (add-there y) (to∘from (Any-∃ xs) ⟨ x , ⟨ x∈xs , Px ⟩ ⟩)
 ```
 
 
@@ -1298,7 +1355,15 @@ analogues `any` and `Any?` which determine whether a predicate holds
 for some element of a list.  Give their definitions.
 
 ```
--- Your code goes here
+any : ∀ {A : Set} → (A → Bool) → List A → Bool
+any p  =  foldr _∨_ false ∘ map p
+
+Any? : ∀ {A : Set} {P : A → Set} → Decidable P → Decidable (Any P)
+Any? P? []                                 =  no λ()
+Any? P? (x ∷ xs) with P? x   | Any? P? xs
+...                 | no  ¬Px | no ¬Pxs     =  no λ{ (here x) → ¬Px x ; (there x) → ¬Pxs x }
+...                 | yes  Px | _           =  yes (here Px)
+...                 | _       | yes Pxs     =  yes (there Pxs)
 ```
 
 
@@ -1344,7 +1409,12 @@ with their corresponding proofs.
       → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
 
 ```
--- Your code goes here
+split : ∀ {A : Set} {P : A → Set} (P? : Decidable P) (zs : List A)
+  → ∃[ xs ] ∃[ ys ] ( merge xs ys zs × All P xs × All (¬_ ∘ P) ys )
+split P? [] = ⟨ [] , ⟨ [] , ⟨ [] , ⟨ [] , [] ⟩ ⟩ ⟩ ⟩
+split P? (x ∷ zs) with P? x | split P? zs
+... | no ¬p | ⟨ xs , ⟨ ys , ⟨ mxyz , ⟨ Pxs , ¬Pys ⟩ ⟩ ⟩ ⟩ = ⟨ xs , ⟨ x ∷ ys , ⟨ right-∷ mxyz , ⟨ Pxs , (¬p ∷ ¬Pys) ⟩ ⟩ ⟩ ⟩
+... | yes p | ⟨ xs , ⟨ ys , ⟨ mxyz , ⟨ Pxs , ¬Pys ⟩ ⟩ ⟩ ⟩ = ⟨ x ∷ xs , ⟨ ys , ⟨ left-∷ mxyz , ⟨ p ∷ Pxs , ¬Pys ⟩ ⟩ ⟩ ⟩
 ```
 
 ## Standard Library
