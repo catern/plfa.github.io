@@ -759,6 +759,12 @@ data _⊢_ : Context → Type → Set where
     → Γ ⊢ A
     → Γ ⊢ `List A
     → Γ ⊢ `List A
+
+  caseL : ∀ {Γ : Context} {A B : Type}
+    → Γ ⊢ `List A
+    → Γ ⊢ B
+    → Γ , A , `List A ⊢ B
+    → Γ ⊢ B
 ```
 
 ### Abbreviating de Bruijn indices
@@ -820,6 +826,7 @@ rename ρ (case⊤ L M)    =  case⊤ (rename ρ L) (rename ρ M)
 rename ρ (case⊥ L)      =  case⊥ (rename ρ L)
 rename ρ (`[])          =  `[]
 rename ρ (M `∷ N)       =  (rename ρ M) `∷ (rename ρ N)
+rename ρ (caseL L M N)  =  caseL (rename ρ L) (rename ρ M) (rename (ext (ext ρ)) N)
 ```
 
 ## Simultaneous Substitution
@@ -852,6 +859,7 @@ subst σ (case⊤ L M)    =  case⊤ (subst σ L) (subst σ M)
 subst σ (case⊥ L)      =  case⊥ (subst σ L)
 subst σ (`[])          =  `[]
 subst σ (M `∷ N)       =  (subst σ M) `∷ (subst σ N)
+subst σ (caseL L M N)  =  caseL (subst σ L) (subst σ M) (subst (exts (exts σ)) N)
 ```
 
 ## Single and double substitution
@@ -1127,6 +1135,22 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
     → N —→ N′
     → V `∷ N —→ V `∷ N′
 
+
+  ξ-caseL : ∀ {Γ : Context} {A B : Type} {L : Γ ⊢ `List A} {L′ : Γ ⊢ `List A}
+    {M : Γ ⊢ B} {N : Γ , A , `List A ⊢ B}
+    → L —→ L′
+    → caseL L M N —→ caseL L′ M N
+
+  β-[] : ∀ {Γ : Context} {A B : Type}
+    {M : Γ ⊢ B} {N : Γ , A , `List A ⊢ B}
+    → caseL `[] M N —→ M
+
+  β-∷ : ∀ {Γ : Context} {A B : Type} {V : Γ ⊢ A} {W : Γ ⊢ `List A}
+    {M : Γ ⊢ B} {N : Γ , A , `List A ⊢ B}
+    → Value V
+    → Value W
+    → caseL (V `∷ W) M N —→ N [ V ][ W ]
+
 ```
 
 ## Reflexive and transitive closure
@@ -1260,6 +1284,10 @@ progress (M `∷ N) with progress M
 ...    | done VM with progress N
 ...        | step N—→N′                     = step (ξ-∷₂ VM N—→N′)
 ...        | done VN                        = done (V-∷ VM VN)
+progress (caseL L M N) with progress L
+...    | step L—→L′                         = step (ξ-caseL L—→L′)
+...    | done V-[]                          = step β-[]
+...    | done (V-∷ VX VXS)                  = step (β-∷ VX VXS)
 ```
 
 
@@ -1407,6 +1435,12 @@ from⊎⊥ : ∀ {A : Type} → ∅ ⊢ A `⊎ `⊥ ⇒ A
 from⊎⊥ = ƛ case⊎ (# 0) (# 0) (case⊥ (# 0))
 
 -- eval (gas 100) (from⊎⊥ · (to⊎⊥ · `zero))
+
+---- lists
+mapL : ∀ {A B : Type} → ∅ ⊢ (A ⇒ B) ⇒ `List A ⇒ `List B
+mapL = μ ƛ ƛ caseL (# 0) `[] (((# 3) · (# 1)) `∷ ((# 4) · (# 3) · (# 0)))
+
+-- eval (gas 100) (mapL · to⊎⊥ · (`zero `∷ `[]))
 ```
 
 #### Exercise `More` (recommended and practice)
