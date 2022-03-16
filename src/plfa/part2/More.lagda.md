@@ -595,6 +595,7 @@ data Type : Set where
   _`⊎_  : Type → Type → Type
   `⊤    : Type
   `⊥    : Type
+  `List : Type → Type
 ```
 
 ### Contexts
@@ -749,6 +750,15 @@ data _⊢_ : Context → Type → Set where
   case⊥ : ∀ {Γ : Context} {A : Type}
     → Γ ⊢ `⊥
     → Γ ⊢ A
+
+  -- lists
+  `[] : ∀ {Γ : Context} {A : Type}
+    → Γ ⊢ `List A
+
+  _`∷_ : ∀ {Γ : Context} {A : Type}
+    → Γ ⊢ A
+    → Γ ⊢ `List A
+    → Γ ⊢ `List A
 ```
 
 ### Abbreviating de Bruijn indices
@@ -808,6 +818,8 @@ rename ρ (case⊎ L M N)  =  case⊎ (rename ρ L) (rename (ext ρ) M) (rename 
 rename ρ (`tt)          =  `tt
 rename ρ (case⊤ L M)    =  case⊤ (rename ρ L) (rename ρ M)
 rename ρ (case⊥ L)      =  case⊥ (rename ρ L)
+rename ρ (`[])          =  `[]
+rename ρ (M `∷ N)       =  (rename ρ M) `∷ (rename ρ N)
 ```
 
 ## Simultaneous Substitution
@@ -838,6 +850,8 @@ subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (ex
 subst σ (`tt)          =  `tt
 subst σ (case⊤ L M)    =  case⊤ (subst σ L) (subst σ M)
 subst σ (case⊥ L)      =  case⊥ (subst σ L)
+subst σ (`[])          =  `[]
+subst σ (M `∷ N)       =  (subst σ M) `∷ (subst σ N)
 ```
 
 ## Single and double substitution
@@ -920,6 +934,16 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
 
   V-tt : ∀ {Γ : Context}
     → Value (`tt {Γ})
+
+  -- lists
+
+  V-[] : ∀ {Γ : Context} {A : Type}
+    → Value (`[] {Γ} {A})
+
+  V-∷ : ∀ {Γ : Context} {A : Type} {V : Γ ⊢ A} {W : Γ ⊢ `List A}
+    → Value V
+    → Value W
+    → Value (V `∷ W)
 ```
 
 Implicit arguments need to be supplied when they are
@@ -1090,6 +1114,19 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
   ξ-case⊥ : ∀ {Γ : Context} {A : Type} {L : Γ ⊢ `⊥} {L′ : Γ ⊢ `⊥}
     → L —→ L′
     → case⊥ {Γ} {A} L —→ case⊥ {Γ} {A} L′
+
+  -- lists
+
+  ξ-∷₁ : ∀ {Γ : Context} {A : Type} {M : Γ ⊢ A} {M′ : Γ ⊢ A} {N : Γ ⊢ `List A}
+    → M —→ M′
+    → M `∷ N —→ M′ `∷ N
+
+
+  ξ-∷₂ : ∀ {Γ : Context} {A : Type} {V : Γ ⊢ A} {N : Γ ⊢ `List A} {N′ : Γ ⊢ `List A}
+    → Value V
+    → N —→ N′
+    → V `∷ N —→ V `∷ N′
+
 ```
 
 ## Reflexive and transitive closure
@@ -1136,6 +1173,9 @@ V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—�
 V¬—→ (V-inj₁ VM)  (ξ-inj₁ M—→M′)    =  V¬—→ VM M—→M′
 V¬—→ (V-inj₂ VM)  (ξ-inj₂ M—→M′)    =  V¬—→ VM M—→M′
 V¬—→ V-tt         ()
+V¬—→ V-[]         ()
+V¬—→ (V-∷ VM _ )  (ξ-∷₁ M—→N′) = V¬—→ VM M—→N′
+V¬—→ (V-∷ _  VN)  (ξ-∷₂ _ N—→N′) = V¬—→ VN N—→N′
 ```
 
 
@@ -1214,6 +1254,12 @@ progress (case⊤ L M) with progress L
 progress (case⊥ L) with progress L
 ...    | step L—→L′                         =  step (ξ-case⊥ L—→L′)
 ...    | done ()
+progress `[]                                =  done V-[]
+progress (M `∷ N) with progress M
+...    | step M—→M′                         = step (ξ-∷₁ M—→M′)
+...    | done VM with progress N
+...        | step N—→N′                     = step (ξ-∷₂ VM N—→N′)
+...        | done VN                        = done (V-∷ VM VN)
 ```
 
 
