@@ -593,6 +593,7 @@ data Type : Set where
   Nat   : Type
   _`×_  : Type → Type → Type
   _`⊎_  : Type → Type → Type
+  `⊤    : Type
 ```
 
 ### Contexts
@@ -732,6 +733,10 @@ data _⊢_ : Context → Type → Set where
     → Γ , B ⊢ C
     ------------------
     → Γ ⊢ C
+
+  -- unit
+  `tt : ∀ {Γ : Context}
+    → Γ ⊢ `⊤
 ```
 
 ### Abbreviating de Bruijn indices
@@ -788,6 +793,7 @@ rename ρ (case× L M)    =  case× (rename ρ L) (rename (ext (ext ρ)) M)
 rename ρ (`inj₁ L)      =  `inj₁ (rename ρ L)
 rename ρ (`inj₂ L)      =  `inj₂ (rename ρ L)
 rename ρ (case⊎ L M N)  =  case⊎ (rename ρ L) (rename (ext ρ) M) (rename (ext ρ) N)
+rename ρ (`tt)          =  `tt
 ```
 
 ## Simultaneous Substitution
@@ -815,6 +821,7 @@ subst σ (case× L M)    =  case× (subst σ L) (subst (exts (exts σ)) M)
 subst σ (`inj₁ L)      =  `inj₁ (subst σ L)
 subst σ (`inj₂ L)      =  `inj₂ (subst σ L)
 subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (exts σ) N)
+subst σ (`tt)          =  `tt
 ```
 
 ## Single and double substitution
@@ -893,6 +900,10 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
       ----------------
     → Value (`inj₂ {Γ} {A} {B} V)
 
+  -- unit
+
+  V-tt : ∀ {Γ : Context}
+    → Value (`tt {Γ})
 ```
 
 Implicit arguments need to be supplied when they are
@@ -1094,6 +1105,7 @@ V¬—→ V-⟨ VM , _ ⟩ (ξ-⟨,⟩₁ M—→M′)    =  V¬—→ VM M—�
 V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
 V¬—→ (V-inj₁ VM)  (ξ-inj₁ M—→M′)    =  V¬—→ VM M—→M′
 V¬—→ (V-inj₂ VM)  (ξ-inj₂ M—→M′)    =  V¬—→ VM M—→M′
+V¬—→ V-tt         ()
 ```
 
 
@@ -1165,6 +1177,7 @@ progress (case⊎ L M N) with progress L
 ...    | step L—→L′                         =  step (ξ-case⊎ L—→L′)
 ...    | done (V-inj₁ VL)                   =  step (β-inj₁ VL)
 ...    | done (V-inj₂ VL)                   =  step (β-inj₂ VL)
+progress `tt                                =  done V-tt
 ```
 
 
@@ -1288,6 +1301,15 @@ swap⊎ = ƛ case⊎ (# 0) (`inj₂ (# 0)) (`inj₁ (# 0))
 
 -- eval (gas 100) (swap⊎ · (`inj₁ `zero))
 -- eval (gas 100) (swap⊎ · (`inj₂ `zero))
+
+---- unit
+to×⊤ : ∀ {A : Type} → ∅ ⊢ A ⇒ A `× `⊤
+to×⊤ = ƛ `⟨ # 0 , `tt ⟩
+
+from×⊤ : ∀ {A : Type} → ∅ ⊢ A `× `⊤ ⇒ A
+from×⊤ = ƛ `proj₁ (# 0)
+
+-- eval (gas 100) (from×⊤ · (to×⊤ · `zero))
 ```
 
 #### Exercise `More` (recommended and practice)
