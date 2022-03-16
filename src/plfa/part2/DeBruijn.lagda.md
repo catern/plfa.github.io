@@ -512,7 +512,11 @@ two natural numbers, now adapted to the intrinsically-typed
 de Bruijn representation.
 
 ```
--- Your code goes here
+mul : ∀ {Γ : Context} → Γ ⊢ `ℕ ⇒ `ℕ ⇒ `ℕ
+mul = μ ƛ ƛ
+  case (# 1)
+    `zero
+    (plus · (# 3 · # 0 · # 1) · # 1)
 ```
 
 
@@ -999,7 +1003,11 @@ not reduce, and its corollary, terms that reduce are not
 values.
 
 ```
--- Your code goes here
+V¬—→ : ∀ {Γ : Context} {A : Type} {M N : Γ ⊢ A} → Value M → ¬ (M —→ N)
+V¬—→ (V-suc x) (ξ-suc y) = V¬—→ x y
+
+—→¬V : ∀ {Γ : Context} {A : Type} {M N : Γ ⊢ A} → (M —→ N) → ¬ Value M
+—→¬V x y = V¬—→ y x
 ```
 
 ## Progress
@@ -1355,7 +1363,9 @@ tedious and almost identical to the previous proof.
 Using the evaluator, confirm that two times two is four.
 
 ```
--- Your code goes here
+-- it makes typechecking too slow haha
+-- _ : eval (gas 100) (mul · two · two) ≡ steps _ (done (V-suc (V-suc (V-suc (V-suc V-zero)))))
+-- _ = refl
 ```
 
 
