@@ -737,6 +737,12 @@ data _⊢_ : Context → Type → Set where
   -- unit
   `tt : ∀ {Γ : Context}
     → Γ ⊢ `⊤
+
+  -- alternative unit
+  case⊤ : ∀ {Γ : Context} {A : Type}
+    → Γ ⊢ `⊤
+    → Γ ⊢ A
+    → Γ ⊢ A
 ```
 
 ### Abbreviating de Bruijn indices
@@ -794,6 +800,7 @@ rename ρ (`inj₁ L)      =  `inj₁ (rename ρ L)
 rename ρ (`inj₂ L)      =  `inj₂ (rename ρ L)
 rename ρ (case⊎ L M N)  =  case⊎ (rename ρ L) (rename (ext ρ) M) (rename (ext ρ) N)
 rename ρ (`tt)          =  `tt
+rename ρ (case⊤ L M)    =  case⊤ (rename ρ L) (rename ρ M)
 ```
 
 ## Simultaneous Substitution
@@ -822,6 +829,7 @@ subst σ (`inj₁ L)      =  `inj₁ (subst σ L)
 subst σ (`inj₂ L)      =  `inj₂ (subst σ L)
 subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (exts σ) N)
 subst σ (`tt)          =  `tt
+subst σ (case⊤ L M)    =  case⊤ (subst σ L) (subst σ M)
 ```
 
 ## Single and double substitution
@@ -1060,6 +1068,14 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
     → Value L
     → case⊎ (`inj₂ L) M N —→ N [ L ]
 
+  -- alternative unit
+
+  ξ-case⊤ : ∀ {Γ : Context} {A : Type} {L : Γ ⊢ `⊤} {L′ : Γ ⊢ `⊤} {M : Γ ⊢ A}
+    → L —→ L′
+    → case⊤ L M —→ case⊤ L′ M
+
+  β-case⊤ : ∀ {Γ : Context} {A : Type} {M : Γ ⊢ A}
+    → case⊤ `tt M —→ M
 ```
 
 ## Reflexive and transitive closure
@@ -1178,6 +1194,9 @@ progress (case⊎ L M N) with progress L
 ...    | done (V-inj₁ VL)                   =  step (β-inj₁ VL)
 ...    | done (V-inj₂ VL)                   =  step (β-inj₂ VL)
 progress `tt                                =  done V-tt
+progress (case⊤ L M) with progress L
+...    | step L—→L′                         =  step (ξ-case⊤ L—→L′)
+...    | done V-tt                          =  step β-case⊤
 ```
 
 
@@ -1310,6 +1329,12 @@ from×⊤ : ∀ {A : Type} → ∅ ⊢ A `× `⊤ ⇒ A
 from×⊤ = ƛ `proj₁ (# 0)
 
 -- eval (gas 100) (from×⊤ · (to×⊤ · `zero))
+
+---- alternative unit
+from×⊤-case : ∀ {A : Type} → ∅ ⊢ A `× `⊤ ⇒ A
+from×⊤-case = ƛ case× (# 0) (case⊤ (# 0) (# 1))
+
+-- eval (gas 100) (from×⊤-case · (to×⊤ · `zero))
 ```
 
 #### Exercise `More` (recommended and practice)
