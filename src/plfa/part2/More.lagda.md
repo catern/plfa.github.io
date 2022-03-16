@@ -592,6 +592,7 @@ data Type : Set where
   _⇒_   : Type → Type → Type
   Nat   : Type
   _`×_  : Type → Type → Type
+  _`⊎_  : Type → Type → Type
 ```
 
 ### Contexts
@@ -714,6 +715,23 @@ data _⊢_ : Context → Type → Set where
       --------------
     → Γ ⊢ C
 
+  -- sums
+  `inj₁ : ∀ {Γ A B}
+    → Γ ⊢ A
+    ---------------
+    → Γ ⊢ A `⊎ B
+
+  `inj₂ : ∀ {Γ A B}
+    → Γ ⊢ B
+    ---------------
+    → Γ ⊢ A `⊎ B
+
+  case⊎ : ∀ {Γ A B C}
+    → Γ ⊢ A `⊎ B
+    → Γ , A ⊢ C
+    → Γ , B ⊢ C
+    ------------------
+    → Γ ⊢ C
 ```
 
 ### Abbreviating de Bruijn indices
@@ -767,6 +785,9 @@ rename ρ `⟨ M , N ⟩     =  `⟨ rename ρ M , rename ρ N ⟩
 rename ρ (`proj₁ L)     =  `proj₁ (rename ρ L)
 rename ρ (`proj₂ L)     =  `proj₂ (rename ρ L)
 rename ρ (case× L M)    =  case× (rename ρ L) (rename (ext (ext ρ)) M)
+rename ρ (`inj₁ L)      =  `inj₁ (rename ρ L)
+rename ρ (`inj₂ L)      =  `inj₂ (rename ρ L)
+rename ρ (case⊎ L M N)  =  case⊎ (rename ρ L) (rename (ext ρ) M) (rename (ext ρ) N)
 ```
 
 ## Simultaneous Substitution
@@ -791,6 +812,9 @@ subst σ `⟨ M , N ⟩     =  `⟨ subst σ M , subst σ N ⟩
 subst σ (`proj₁ L)     =  `proj₁ (subst σ L)
 subst σ (`proj₂ L)     =  `proj₂ (subst σ L)
 subst σ (case× L M)    =  case× (subst σ L) (subst (exts (exts σ)) M)
+subst σ (`inj₁ L)      =  `inj₁ (subst σ L)
+subst σ (`inj₂ L)      =  `inj₂ (subst σ L)
+subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (exts σ) N)
 ```
 
 ## Single and double substitution
@@ -856,6 +880,19 @@ data Value : ∀ {Γ A} → Γ ⊢ A → Set where
     → Value W
       ----------------
     → Value `⟨ V , W ⟩
+
+  -- sums
+
+  V-inj₁_ : ∀ {Γ A B} {V : Γ ⊢ A}
+    → Value V
+      ----------------
+    → Value (`inj₁ {Γ} {A} {B} V)
+
+  V-inj₂_ : ∀ {Γ A B} {V : Γ ⊢ B}
+    → Value V
+      ----------------
+    → Value (`inj₂ {Γ} {A} {B} V)
+
 ```
 
 Implicit arguments need to be supplied when they are
@@ -990,6 +1027,28 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
       ----------------------------------
     → case× `⟨ V , W ⟩ M —→ M [ V ][ W ]
 
+  -- sums
+
+  ξ-inj₁ : ∀ {Γ : Context} {A B : Type} {L : Γ ⊢ A} {L′ : Γ ⊢ A}
+    → L —→ L′
+    → `inj₁ {Γ} {A} {B} L —→ `inj₁ {Γ} {A} {B} L′
+
+  ξ-inj₂ : ∀ {Γ : Context} {A B : Type} {L : Γ ⊢ B} {L′ : Γ ⊢ B}
+    → L —→ L′
+    → `inj₂ {Γ} {A} {B} L —→ `inj₂ {Γ} {A} {B} L′
+
+  ξ-case⊎ : ∀ {Γ : Context} {A B C : Type} {L : Γ ⊢ A `⊎ B} {L′ : Γ ⊢ A `⊎ B}  {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → L —→ L′
+    → case⊎ L M N —→ case⊎ L′ M N
+
+  β-inj₁ : ∀ {Γ : Context} {A B C : Type} {L : Γ ⊢ A} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → Value L
+    → case⊎ (`inj₁ L) M N —→ M [ L ]
+
+  β-inj₂ : ∀ {Γ : Context} {A B C : Type} {L : Γ ⊢ B} {M : Γ , A ⊢ C} {N : Γ , B ⊢ C}
+    → Value L
+    → case⊎ (`inj₂ L) M N —→ N [ L ]
+
 ```
 
 ## Reflexive and transitive closure
@@ -1033,6 +1092,8 @@ V¬—→ (V-suc VM)   (ξ-suc M—→M′)     =  V¬—→ VM M—→M′
 V¬—→ V-con        ()
 V¬—→ V-⟨ VM , _ ⟩ (ξ-⟨,⟩₁ M—→M′)    =  V¬—→ VM M—→M′
 V¬—→ V-⟨ _ , VN ⟩ (ξ-⟨,⟩₂ _ N—→N′)  =  V¬—→ VN N—→N′
+V¬—→ (V-inj₁ VM)  (ξ-inj₁ M—→M′)    =  V¬—→ VM M—→M′
+V¬—→ (V-inj₂ VM)  (ξ-inj₂ M—→M′)    =  V¬—→ VM M—→M′
 ```
 
 
@@ -1094,6 +1155,16 @@ progress (`proj₂ L) with progress L
 progress (case× L M) with progress L
 ...    | step L—→L′                         =  step (ξ-case× L—→L′)
 ...    | done (V-⟨ VM , VN ⟩)               =  step (β-case× VM VN)
+progress (`inj₁ L) with progress L
+...    | step L—→L′                         =  step (ξ-inj₁ L—→L′)
+...    | done (VL)                          =  done (V-inj₁ VL)
+progress (`inj₂ L) with progress L
+...    | step L—→L′                         =  step (ξ-inj₂ L—→L′)
+...    | done (VL)                          =  done (V-inj₂ VL)
+progress (case⊎ L M N) with progress L
+...    | step L—→L′                         =  step (ξ-case⊎ L—→L′)
+...    | done (V-inj₁ VL)                   =  step (β-inj₁ VL)
+...    | done (V-inj₂ VL)                   =  step (β-inj₂ VL)
 ```
 
 
@@ -1210,6 +1281,13 @@ _ =
    —→⟨ β-case× V-con V-zero ⟩
      `⟨ `zero , con 42 ⟩
    ∎
+
+---- sums
+swap⊎ : ∀ {A B} → ∅ ⊢ A `⊎ B ⇒ B `⊎ A
+swap⊎ = ƛ case⊎ (# 0) (`inj₂ (# 0)) (`inj₁ (# 0))
+
+-- eval (gas 100) (swap⊎ · (`inj₁ `zero))
+-- eval (gas 100) (swap⊎ · (`inj₂ `zero))
 ```
 
 #### Exercise `More` (recommended and practice)
@@ -1230,6 +1308,7 @@ Please delimit any code you add as follows:
     -- begin
     -- end
 
+# no, graders should just read my commit diffs
 
 #### Exercise `double-subst` (stretch)
 
