@@ -594,6 +594,7 @@ data Type : Set where
   _`×_  : Type → Type → Type
   _`⊎_  : Type → Type → Type
   `⊤    : Type
+  `⊥    : Type
 ```
 
 ### Contexts
@@ -743,6 +744,11 @@ data _⊢_ : Context → Type → Set where
     → Γ ⊢ `⊤
     → Γ ⊢ A
     → Γ ⊢ A
+
+  -- empty
+  case⊥ : ∀ {Γ : Context} {A : Type}
+    → Γ ⊢ `⊥
+    → Γ ⊢ A
 ```
 
 ### Abbreviating de Bruijn indices
@@ -801,6 +807,7 @@ rename ρ (`inj₂ L)      =  `inj₂ (rename ρ L)
 rename ρ (case⊎ L M N)  =  case⊎ (rename ρ L) (rename (ext ρ) M) (rename (ext ρ) N)
 rename ρ (`tt)          =  `tt
 rename ρ (case⊤ L M)    =  case⊤ (rename ρ L) (rename ρ M)
+rename ρ (case⊥ L)      =  case⊥ (rename ρ L)
 ```
 
 ## Simultaneous Substitution
@@ -830,6 +837,7 @@ subst σ (`inj₂ L)      =  `inj₂ (subst σ L)
 subst σ (case⊎ L M N)  =  case⊎ (subst σ L) (subst (exts σ) M) (subst (exts σ) N)
 subst σ (`tt)          =  `tt
 subst σ (case⊤ L M)    =  case⊤ (subst σ L) (subst σ M)
+subst σ (case⊥ L)      =  case⊥ (subst σ L)
 ```
 
 ## Single and double substitution
@@ -1076,6 +1084,12 @@ data _—→_ : ∀ {Γ A} → (Γ ⊢ A) → (Γ ⊢ A) → Set where
 
   β-case⊤ : ∀ {Γ : Context} {A : Type} {M : Γ ⊢ A}
     → case⊤ `tt M —→ M
+
+  -- empty
+
+  ξ-case⊥ : ∀ {Γ : Context} {A : Type} {L : Γ ⊢ `⊥} {L′ : Γ ⊢ `⊥}
+    → L —→ L′
+    → case⊥ {Γ} {A} L —→ case⊥ {Γ} {A} L′
 ```
 
 ## Reflexive and transitive closure
@@ -1197,6 +1211,9 @@ progress `tt                                =  done V-tt
 progress (case⊤ L M) with progress L
 ...    | step L—→L′                         =  step (ξ-case⊤ L—→L′)
 ...    | done V-tt                          =  step β-case⊤
+progress (case⊥ L) with progress L
+...    | step L—→L′                         =  step (ξ-case⊥ L—→L′)
+...    | done ()
 ```
 
 
@@ -1335,6 +1352,15 @@ from×⊤-case : ∀ {A : Type} → ∅ ⊢ A `× `⊤ ⇒ A
 from×⊤-case = ƛ case× (# 0) (case⊤ (# 0) (# 1))
 
 -- eval (gas 100) (from×⊤-case · (to×⊤ · `zero))
+
+---- empty
+to⊎⊥ : ∀ {A : Type} → ∅ ⊢ A ⇒ A `⊎ `⊥
+to⊎⊥ = ƛ `inj₁ (# 0)
+
+from⊎⊥ : ∀ {A : Type} → ∅ ⊢ A `⊎ `⊥ ⇒ A
+from⊎⊥ = ƛ case⊎ (# 0) (# 0) (case⊥ (# 0))
+
+-- eval (gas 100) (from⊎⊥ · (to⊎⊥ · `zero))
 ```
 
 #### Exercise `More` (recommended and practice)
