@@ -198,7 +198,11 @@ two natural numbers.  Your definition may use `plus` as
 defined earlier.
 
 ```
--- Your code goes here
+mul : Term
+mul = μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+  case `"m"
+    [zero⇒ `zero
+    |suc "lm" ⇒ plus · (`"*" · `"lm" · `"n") · `"n" ]
 ```
 
 
@@ -210,9 +214,10 @@ definition may use `plusᶜ` as defined earlier (or may not
 — there are nice definitions both ways).
 
 ```
--- Your code goes here
+mulᶜ : Term
+mulᶜ = ƛ "m" ⇒ ƛ "n" ⇒
+  ƛ "s" ⇒ `"m" · (`"n" · `"s")
 ```
-
 
 #### Exercise `primed` (stretch) {#primed}
 
@@ -263,7 +268,19 @@ plus′ = μ′ + ⇒ ƛ′ m ⇒ ƛ′ n ⇒
   n  =  ` "n"
 ```
 Write out the definition of multiplication in the same style.
+```
+mul′ : Term
+mul′ = μ′ * ⇒ ƛ′ m ⇒ ƛ′ n ⇒
+  case′ m
+    [zero⇒ n
+    |suc m ⇒ + · (* · m · n) · n ]
+  where
+  *  =  ` "*"
+  +  =  ` "+"
+  m  =  ` "m"
+  n  =  ` "n"
 
+```
 
 ### Formal vs informal
 
@@ -533,6 +550,10 @@ What is the result of the following substitution?
 3. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ ` "x")) ``
 4. `` (ƛ "y" ⇒ `zero · (ƛ "x" ⇒ `zero)) ``
 
+```
+-- 3!
+```
+
 
 #### Exercise `_[_:=_]′` (stretch)
 
@@ -543,7 +564,40 @@ clauses into a single function, defined by mutual recursion with
 substitution.
 
 ```
--- Your code goes here
+_?[_bind,_:=_] : Term → Id → Id → Term → Term
+t ?[ x bind, y := V ] with x ≟ y
+... | yes _          =  t
+... | no  _          =  t [ y := V ] 
+
+_[_:=_]′ : Term → Id → Term → Term
+
+infix 9 _[_:=_]′
+
+(` x) [ y := V ]′ with x ≟ y
+... | yes _          =  V
+... | no  _          =  ` x
+(ƛ x ⇒ N) [ y := V ]′ = ƛ x ⇒ (N ?[ x bind, y := V ])
+(L · M) [ y := V ]′   =  L [ y := V ]′ · M [ y := V ]′
+(`zero) [ y := V ]′   =  `zero
+(`suc M) [ y := V ]′  =  `suc M [ y := V ]′
+(case L [zero⇒ M |suc x ⇒ N ]) [ y := V ]′ =
+  case L [ y := V ]′ [zero⇒ M [ y := V ]′ |suc x ⇒ (N ?[ x bind, y := V ]) ]
+(μ x ⇒ N) [ y := V ]′ = μ x ⇒ (N ?[ x bind, y := V ])
+
+_ : (ƛ "z" ⇒ ` "s" · (` "s" · ` "z")) [ "s" := sucᶜ ]′ ≡ ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")
+_ = refl
+
+_ : (sucᶜ · (sucᶜ · ` "z")) [ "z" := `zero ]′ ≡ sucᶜ · (sucᶜ · `zero)
+_ = refl
+
+_ : (ƛ "x" ⇒ ` "y") [ "y" := `zero ]′ ≡ ƛ "x" ⇒ `zero
+_ = refl
+
+_ : (ƛ "x" ⇒ ` "x") [ "x" := `zero ]′ ≡ ƛ "x" ⇒ ` "x"
+_ = refl
+
+_ : (ƛ "y" ⇒ ` "y") [ "x" := `zero ]′ ≡ ƛ "y" ⇒ ` "y"
+_ = refl
 ```
 
 
@@ -672,6 +726,8 @@ What does the following term step to?
 2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 
+# 1!
+
 What does the following term step to?
 
     (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x")  —→  ???
@@ -679,6 +735,8 @@ What does the following term step to?
 1.  `` (ƛ "x" ⇒ ` "x") ``
 2.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
 3.  `` (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") · (ƛ "x" ⇒ ` "x") ``
+
+# 2
 
 What does the following term step to?  (Where `twoᶜ` and `sucᶜ` are as
 defined above.)
@@ -689,6 +747,7 @@ defined above.)
 2.  `` (ƛ "z" ⇒ sucᶜ · (sucᶜ · ` "z")) · `zero ``
 3.  `` `zero ``
 
+# 2
 
 ## Reflexive and transitive closure
 
@@ -767,7 +826,26 @@ Show that the first notion of reflexive and transitive closure
 above embeds into the second. Why are they not isomorphic?
 
 ```
--- Your code goes here
+open import plfa.part1.Isomorphism using (_≲_)
+open import Relation.Binary.PropositionalEquality using (cong)
+open _≲_
+
+—↠-trans : ∀ {L M N} → L —↠ M → M —↠ N → L —↠ N
+—↠-trans {L} {.L} {N} (_ ∎) y = y
+—↠-trans (L —→⟨ L—→x ⟩ x—↠M) M—↠N = L —→⟨ L—→x ⟩ —↠-trans x—↠M M—↠N
+
+—↠≲—↠′ : ∀ {M N : Term} → M —↠ N ≲ M —↠′ N
+to —↠≲—↠′ (_ ∎) = refl′
+to —↠≲—↠′ (_ —→⟨ l—→m ⟩ m—↠n) = trans′ (step′ l—→m) (to —↠≲—↠′ m—↠n)
+from (—↠≲—↠′ {m} {n}) (step′ m—→n) = m —→⟨ m—→n ⟩ n ∎
+from (—↠≲—↠′ {m} {.m}) refl′ = m ∎
+from —↠≲—↠′ (trans′ l—↠m m—↠n) = —↠-trans (from —↠≲—↠′ l—↠m) (from —↠≲—↠′ m—↠n)
+from∘to —↠≲—↠′ (_ ∎) = refl
+from∘to (—↠≲—↠′ {M} {N}) (_ —→⟨ M—→x ⟩ x—↠N) = cong (M —→⟨ M—→x ⟩_) (from∘to —↠≲—↠′ x—↠N)
+
+-- the reason that —↠≲—↠′ is bigger than —↠≲—↠ is that we can use
+-- transitivity in multiple orders in —↠≲—↠′, and that ordering
+-- information can't be preserved in —↠≲—↠
 ```
 
 ## Confluence
@@ -932,7 +1010,38 @@ In the next chapter, we will see how to compute such reduction sequences.
 Write out the reduction sequence demonstrating that one plus one is two.
 
 ```
--- Your code goes here
+one : Term
+one = `suc `zero
+
+_ : plus · one · one —↠ `suc `suc `zero
+_ =
+  begin
+    plus · one · one
+  —→⟨ ξ-·₁ (ξ-·₁ β-μ) ⟩
+    (ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · one · one
+  —→⟨ ξ-·₁ (β-ƛ (V-suc V-zero)) ⟩
+    (ƛ "n" ⇒
+      case one [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+         · one
+  —→⟨ β-ƛ (V-suc V-zero) ⟩
+    case one [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ]
+  —→⟨ β-suc V-zero ⟩
+    `suc (plus · `zero · one)
+  —→⟨ ξ-suc (ξ-·₁ (ξ-·₁ β-μ)) ⟩
+    `suc ((ƛ "m" ⇒ ƛ "n" ⇒
+      case ` "m" [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · `zero · one)
+  —→⟨ ξ-suc (ξ-·₁ (β-ƛ V-zero)) ⟩
+    `suc ((ƛ "n" ⇒
+      case `zero [zero⇒ ` "n" |suc "m" ⇒ `suc (plus · ` "m" · ` "n") ])
+        · one)
+  —→⟨ ξ-suc (β-ƛ (V-suc V-zero)) ⟩
+    `suc (case `zero [zero⇒ one |suc "m" ⇒ `suc (plus · ` "m" · one) ])
+  —→⟨ ξ-suc β-zero ⟩
+    `suc one
+  ∎
 ```
 
 
@@ -984,6 +1093,8 @@ Thus:
 
   Give more than one answer if appropriate.
 
+# just 2
+
 * What is the type of the following term?
 
     `` (ƛ "s" ⇒ ` "s" · (` "s"  · `zero)) · sucᶜ ``
@@ -997,6 +1108,7 @@ Thus:
 
   Give more than one answer if appropriate.
 
+# just 6
 
 ## Typing
 
@@ -1040,7 +1152,19 @@ to the list
     [ ⟨ "z" , `ℕ ⟩ , ⟨ "s" , `ℕ ⇒ `ℕ ⟩ ]
 
 ```
--- Your code goes here
+open import plfa.part1.Isomorphism using (_≃_)
+open import Data.Product using (_,_)
+open _≃_
+
+Context-≃ : Context ≃ List (Id × Type)
+to Context-≃ ∅ = []
+to Context-≃ (ctx , i ⦂ t) = (i , t) ∷ (to Context-≃ ctx)
+from Context-≃ [] = ∅
+from Context-≃ ((i , t) ∷ xs) = from Context-≃ xs , i ⦂ t
+from∘to Context-≃ ∅ = refl
+from∘to Context-≃ (ctx , i ⦂ t) = cong (_, i ⦂ t) (from∘to Context-≃ ctx)
+to∘from Context-≃ [] = refl
+to∘from Context-≃ ((i , t) ∷ xs) = cong ((i , t) ∷_) (to∘from Context-≃ xs)
 ```
 
 ### Lookup judgment
@@ -1380,14 +1504,20 @@ For each of the following, give a type `A` for which it is derivable,
 or explain why there is no such `A`.
 
 1. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ , "x" ⦂ `ℕ ⊢ ` "y" · ` "x" ⦂ A ``
+# ℕ
 2. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ , "x" ⦂ `ℕ ⊢ ` "x" · ` "y" ⦂ A ``
+# can't have x ⦂ ℕ on the left side of an application
 3. `` ∅ , "y" ⦂ `ℕ ⇒ `ℕ ⊢ ƛ "x" ⇒ ` "y" · ` "x" ⦂ A ``
+# x is free, can't type this
 
 For each of the following, give types `A`, `B`, and `C` for which it is derivable,
 or explain why there are no such types.
 
 1. `` ∅ , "x" ⦂ A ⊢ ` "x" · ` "x" ⦂ B ``
+# self-application can't be typed in STLC!!
 2. `` ∅ , "x" ⦂ A , "y" ⦂ B ⊢ ƛ "z" ⇒ ` "x" · (` "y" · ` "z") ⦂ C ``
+# x : A = Y → C, y : B : Z → Y
+# A = ℕ → ℕ, B = ℕ → ℕ, C = ℕ
 
 
 #### Exercise `⊢mul` (recommended)
@@ -1396,7 +1526,13 @@ Using the term `mul` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```
--- Your code goes here
+⊢mul : ∀ {Γ} → Γ ⊢ mul ⦂ `ℕ ⇒ `ℕ ⇒ `ℕ
+⊢mul = ⊢μ (⊢ƛ (⊢ƛ (⊢case
+  (⊢` (S′ Z))
+  ⊢zero
+  ((⊢plus · (((⊢` (S′ (S′ (S′ Z)))) · (⊢` Z)) · ⊢` (S′ Z))) ·
+   (⊢` (S′ Z)))
+  )))
 ```
 
 
@@ -1406,7 +1542,8 @@ Using the term `mulᶜ` you defined earlier, write out the derivation
 showing that it is well typed.
 
 ```
--- Your code goes here
+⊢mulᶜ : ∀ {Γ A} → Γ ⊢ mulᶜ ⦂ Ch A ⇒ Ch A ⇒ Ch A
+⊢mulᶜ = ⊢ƛ (⊢ƛ (⊢ƛ ((⊢` (S′ (S′ Z))) · ((⊢` (S′ Z)) · (⊢` Z)))))
 ```
 
 
