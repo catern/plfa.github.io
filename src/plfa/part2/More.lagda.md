@@ -1497,79 +1497,79 @@ Please delimit any code you add as follows:
 
 Show that a double substitution is equivalent to two single
 substitutions.
-```
-double-subst :
-  ∀ {Γ A B C} {V : Γ ⊢ A} {W : Γ ⊢ B} {N : Γ , A , B ⊢ C} →
-    N [ V ][ W ] ≡ (N [ rename S_ W ]) [ V ]
-```
-Note the arguments need to be swapped and `W` needs to have
-its context adjusted via renaming in order for the right-hand
-side to be well typed.
+-- ```
+-- double-subst :
+--   ∀ {Γ A B C} {V : Γ ⊢ A} {W : Γ ⊢ B} {N : Γ , A , B ⊢ C} →
+--     N [ V ][ W ] ≡ (N [ rename S_ W ]) [ V ]
+-- ```
+-- Note the arguments need to be swapped and `W` needs to have
+-- its context adjusted via renaming in order for the right-hand
+-- side to be well typed.
 
-```
-open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
-open Eq using (cong; cong₂; sym)
+-- ```
+-- open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
+-- open Eq using (cong; cong₂; sym)
 
-cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {x y u v a b}
-  → x ≡ y → u ≡ v → a ≡ b → f x u a ≡ f y v b
-cong₃ f refl refl refl = refl
+-- cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {x y u v a b}
+--   → x ≡ y → u ≡ v → a ≡ b → f x u a ≡ f y v b
+-- cong₃ f refl refl refl = refl
 
 
-subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {C : Type}
-  {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
-  {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
-  (N : Γ₁ ⊢ C)
-  → subst ρ₂ (subst ρ₁ N) ≡ subst (subst ρ₂ ∘ ρ₁) N
+-- subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {C : Type}
+--   {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
+--   {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
+--   (N : Γ₁ ⊢ C)
+--   → subst ρ₂ (subst ρ₁ N) ≡ subst (subst ρ₂ ∘ ρ₁) N
 
-exts-subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {A C : Type}
-  {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
-  {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
-  (N : Γ₁ , A ∋ C)
-  → subst (exts ρ₂) ((exts ρ₁) N) ≡ exts (subst ρ₂ ∘ ρ₁) N
-exts-subst-∘ Z = refl
-exts-subst-∘ (S N) = {!!}
+-- exts-subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {A C : Type}
+--   {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
+--   {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
+--   (N : Γ₁ , A ∋ C)
+--   → subst (exts ρ₂) ((exts ρ₁) N) ≡ exts (subst ρ₂ ∘ ρ₁) N
+-- exts-subst-∘ Z = refl
+-- exts-subst-∘ (S N) = {!!}
 
-subst-∘ (` k)          = refl
-subst-∘ (ƛ N)          = cong ƛ_ {!!}
-subst-∘ (L · M)        = cong₂ _·_ (subst-∘ L) (subst-∘ M)
-subst-∘ `zero          = refl
-subst-∘ (`suc M)       = cong `suc_ (subst-∘ M)
-subst-∘ (case L M N)   = cong₃ case (subst-∘ L) (subst-∘ M) {!!}
-subst-∘ (μ N)          = {!!}
-subst-∘ (con n)        = refl
-subst-∘ (M `* N)       = cong₂ _`*_ (subst-∘ M) (subst-∘ N)
-subst-∘ (`let M N)     = cong₂ `let (subst-∘ M) {!!}
-subst-∘ `⟨ M , N ⟩     = cong₂ `⟨_,_⟩ (subst-∘ M) (subst-∘ N)
-subst-∘ (`proj₁ L)     = cong `proj₁ (subst-∘ L)
-subst-∘ (`proj₂ L)     = cong `proj₂ (subst-∘ L)
-subst-∘ (case× L M)    = cong₂ case× (subst-∘ L) {!!}
-subst-∘ (`inj₁ L)      = cong `inj₁ (subst-∘ L)
-subst-∘ (`inj₂ L)      = cong `inj₂ (subst-∘ L)
-subst-∘ (case⊎ L M N)  = cong₃ case⊎ (subst-∘ L) {!!} {!!}
-subst-∘ (`tt)          = refl
-subst-∘ (case⊤ L M)    = cong₂ case⊤ (subst-∘ L) (subst-∘ M)
-subst-∘ (case⊥ L)      = cong case⊥ (subst-∘ L)
-subst-∘ (`[])          = refl
-subst-∘ (M `∷ N)       = cong₂ _`∷_ (subst-∘ M) (subst-∘ N)
-subst-∘ (caseL L M N)  = cong₃ caseL (subst-∘ L) (subst-∘ M) {!!}
+-- subst-∘ (` k)          = refl
+-- subst-∘ (ƛ N)          = cong ƛ_ {!!}
+-- subst-∘ (L · M)        = cong₂ _·_ (subst-∘ L) (subst-∘ M)
+-- subst-∘ `zero          = refl
+-- subst-∘ (`suc M)       = cong `suc_ (subst-∘ M)
+-- subst-∘ (case L M N)   = cong₃ case (subst-∘ L) (subst-∘ M) {!!}
+-- subst-∘ (μ N)          = {!!}
+-- subst-∘ (con n)        = refl
+-- subst-∘ (M `* N)       = cong₂ _`*_ (subst-∘ M) (subst-∘ N)
+-- subst-∘ (`let M N)     = cong₂ `let (subst-∘ M) {!!}
+-- subst-∘ `⟨ M , N ⟩     = cong₂ `⟨_,_⟩ (subst-∘ M) (subst-∘ N)
+-- subst-∘ (`proj₁ L)     = cong `proj₁ (subst-∘ L)
+-- subst-∘ (`proj₂ L)     = cong `proj₂ (subst-∘ L)
+-- subst-∘ (case× L M)    = cong₂ case× (subst-∘ L) {!!}
+-- subst-∘ (`inj₁ L)      = cong `inj₁ (subst-∘ L)
+-- subst-∘ (`inj₂ L)      = cong `inj₂ (subst-∘ L)
+-- subst-∘ (case⊎ L M N)  = cong₃ case⊎ (subst-∘ L) {!!} {!!}
+-- subst-∘ (`tt)          = refl
+-- subst-∘ (case⊤ L M)    = cong₂ case⊤ (subst-∘ L) (subst-∘ M)
+-- subst-∘ (case⊥ L)      = cong case⊥ (subst-∘ L)
+-- subst-∘ (`[])          = refl
+-- subst-∘ (M `∷ N)       = cong₂ _`∷_ (subst-∘ M) (subst-∘ N)
+-- subst-∘ (caseL L M N)  = cong₃ caseL (subst-∘ L) (subst-∘ M) {!!}
   
 
-double-subst {Γ} {A} {B} {C} {V} {W} {N} = Eq.≡-Reasoning.begin
-  N [ V ][ W ]
-  ≡⟨⟩
-  subst {Γ , A , B} {Γ} (substZeroAndOne V W) N
-  ≡⟨⟩
-  subst {Γ , A , B} {Γ} (ρ∘ρ (substZero V) (substZero (rename S_ W))) N
-  ≡⟨⟩
-  subst {Γ , A , B} {Γ} (subst (substZero V) ∘ (substZero (rename S_ W))) N
-  ≡⟨ sym (subst-∘ N) ⟩
-  subst {Γ , A} {Γ} (substZero V)
-    (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N)
-  ≡⟨⟩
-  (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N) [ V ]
-  ≡⟨⟩
-  N [ rename S_ W ] [ V ]
-  Eq.≡-Reasoning.∎
+-- double-subst {Γ} {A} {B} {C} {V} {W} {N} = Eq.≡-Reasoning.begin
+--   N [ V ][ W ]
+--   ≡⟨⟩
+--   subst {Γ , A , B} {Γ} (substZeroAndOne V W) N
+--   ≡⟨⟩
+--   subst {Γ , A , B} {Γ} (ρ∘ρ (substZero V) (substZero (rename S_ W))) N
+--   ≡⟨⟩
+--   subst {Γ , A , B} {Γ} (subst (substZero V) ∘ (substZero (rename S_ W))) N
+--   ≡⟨ sym (subst-∘ N) ⟩
+--   subst {Γ , A} {Γ} (substZero V)
+--     (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N)
+--   ≡⟨⟩
+--   (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N) [ V ]
+--   ≡⟨⟩
+--   N [ rename S_ W ] [ V ]
+--   Eq.≡-Reasoning.∎
 ```
 
 ## Test examples
