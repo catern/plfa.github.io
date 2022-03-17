@@ -865,7 +865,10 @@ subst σ (caseL L M N)  =  caseL (subst σ L) (subst σ M) (subst (exts (exts σ
 ## Single and double substitution
 
 ```
-substZero : ∀ {Γ}{A B} → Γ ⊢ A → Γ , A ∋ B → Γ ⊢ B
+substZero : ∀ {Γ}{A B}
+  → Γ ⊢ A
+  → Γ , A ∋ B
+  → Γ ⊢ B
 substZero V Z      =  V
 substZero V (S x)  =  ` x
 
@@ -882,12 +885,39 @@ _[_][_] : ∀ {Γ A B C}
   → Γ ⊢ B
     -------------
   → Γ ⊢ C
-_[_][_] {Γ} {A} {B} N V W =  subst {Γ , A , B} {Γ} σ N
-  where
-  σ : ∀ {C} → Γ , A , B ∋ C → Γ ⊢ C
-  σ Z          =  W
-  σ (S Z)      =  V
-  σ (S (S x))  =  ` x
+
+substZeroAndOne : ∀ {Γ : Context} {A B C : Type}
+  → Γ ⊢ A
+  → Γ ⊢ B
+  → Γ , A , B ∋ C
+  → Γ ⊢ C
+-- substZeroAndOne V W Z = W
+-- substZeroAndOne V W (S x) = substZero V x
+-- I need some kind of composition rule... for successive substitions...
+-- composing two remapping functions... right...
+-- okay, so:
+-- Γ , A ∋ C → Γ ⊢ C
+-- Γ , A , B ∋ C → Γ , A ⊢ C
+-- I need to compose this into...
+-- Γ , A , B ∋ C → Γ ⊢ C
+
+-- okay!
+
+open import Function using (_∘_)
+
+-- wait a second... maybe I just subst in here?
+-- I use subst to convert ∋ → ⊢ to ⊢ → ⊢... yes, okay, right!
+ρ∘ρ : ∀ {Γ : Context} {A B : Type}
+  → (∀ {C : Type} → Γ , A ∋ C → Γ ⊢ C)
+  → (∀ {C : Type} → Γ , A , B ∋ C → Γ , A ⊢ C)
+  → (∀ {C : Type} → Γ , A , B ∋ C → Γ ⊢ C)
+ρ∘ρ ρ₁ ρ₂ = subst ρ₁ ∘ ρ₂
+
+substZeroAndOne V W = ρ∘ρ (substZero V) (substZero (rename S_ W))
+
+-- Γ , A ⊢ C
+
+_[_][_] {Γ} {A} {B} N V W =  subst {Γ , A , B} {Γ} (substZeroAndOne V W) N
 ```
 
 ## Values
@@ -1468,14 +1498,79 @@ Please delimit any code you add as follows:
 Show that a double substitution is equivalent to two single
 substitutions.
 ```
-postulate
-  double-subst :
-    ∀ {Γ A B C} {V : Γ ⊢ A} {W : Γ ⊢ B} {N : Γ , A , B ⊢ C} →
-      N [ V ][ W ] ≡ (N [ rename S_ W ]) [ V ]
+double-subst :
+  ∀ {Γ A B C} {V : Γ ⊢ A} {W : Γ ⊢ B} {N : Γ , A , B ⊢ C} →
+    N [ V ][ W ] ≡ (N [ rename S_ W ]) [ V ]
 ```
 Note the arguments need to be swapped and `W` needs to have
 its context adjusted via renaming in order for the right-hand
 side to be well typed.
+
+```
+open Eq.≡-Reasoning using (begin_; _≡⟨⟩_; step-≡; _∎)
+open Eq using (cong; cong₂; sym)
+
+cong₃ : ∀ {A B C D : Set} (f : A → B → C → D) {x y u v a b}
+  → x ≡ y → u ≡ v → a ≡ b → f x u a ≡ f y v b
+cong₃ f refl refl refl = refl
+
+
+subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {C : Type}
+  {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
+  {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
+  (N : Γ₁ ⊢ C)
+  → subst ρ₂ (subst ρ₁ N) ≡ subst (subst ρ₂ ∘ ρ₁) N
+
+exts-subst-∘ : ∀ {Γ₁ Γ₂ Γ₃ : Context} {A C : Type}
+  {ρ₁ : ∀ {A : Type} → Γ₁ ∋ A → Γ₂ ⊢ A}
+  {ρ₂ : ∀ {A : Type} → Γ₂ ∋ A → Γ₃ ⊢ A}
+  (N : Γ₁ , A ∋ C)
+  → subst (exts ρ₂) ((exts ρ₁) N) ≡ exts (subst ρ₂ ∘ ρ₁) N
+exts-subst-∘ Z = refl
+exts-subst-∘ (S N) = {!!}
+
+subst-∘ (` k)          = refl
+subst-∘ (ƛ N)          = cong ƛ_ {!!}
+subst-∘ (L · M)        = cong₂ _·_ (subst-∘ L) (subst-∘ M)
+subst-∘ `zero          = refl
+subst-∘ (`suc M)       = cong `suc_ (subst-∘ M)
+subst-∘ (case L M N)   = cong₃ case (subst-∘ L) (subst-∘ M) {!!}
+subst-∘ (μ N)          = {!!}
+subst-∘ (con n)        = refl
+subst-∘ (M `* N)       = cong₂ _`*_ (subst-∘ M) (subst-∘ N)
+subst-∘ (`let M N)     = cong₂ `let (subst-∘ M) {!!}
+subst-∘ `⟨ M , N ⟩     = cong₂ `⟨_,_⟩ (subst-∘ M) (subst-∘ N)
+subst-∘ (`proj₁ L)     = cong `proj₁ (subst-∘ L)
+subst-∘ (`proj₂ L)     = cong `proj₂ (subst-∘ L)
+subst-∘ (case× L M)    = cong₂ case× (subst-∘ L) {!!}
+subst-∘ (`inj₁ L)      = cong `inj₁ (subst-∘ L)
+subst-∘ (`inj₂ L)      = cong `inj₂ (subst-∘ L)
+subst-∘ (case⊎ L M N)  = cong₃ case⊎ (subst-∘ L) {!!} {!!}
+subst-∘ (`tt)          = refl
+subst-∘ (case⊤ L M)    = cong₂ case⊤ (subst-∘ L) (subst-∘ M)
+subst-∘ (case⊥ L)      = cong case⊥ (subst-∘ L)
+subst-∘ (`[])          = refl
+subst-∘ (M `∷ N)       = cong₂ _`∷_ (subst-∘ M) (subst-∘ N)
+subst-∘ (caseL L M N)  = cong₃ caseL (subst-∘ L) (subst-∘ M) {!!}
+  
+
+double-subst {Γ} {A} {B} {C} {V} {W} {N} = Eq.≡-Reasoning.begin
+  N [ V ][ W ]
+  ≡⟨⟩
+  subst {Γ , A , B} {Γ} (substZeroAndOne V W) N
+  ≡⟨⟩
+  subst {Γ , A , B} {Γ} (ρ∘ρ (substZero V) (substZero (rename S_ W))) N
+  ≡⟨⟩
+  subst {Γ , A , B} {Γ} (subst (substZero V) ∘ (substZero (rename S_ W))) N
+  ≡⟨ sym (subst-∘ N) ⟩
+  subst {Γ , A} {Γ} (substZero V)
+    (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N)
+  ≡⟨⟩
+  (subst {Γ , A , B} {Γ , A} (substZero (rename S_ W)) N) [ V ]
+  ≡⟨⟩
+  N [ rename S_ W ] [ V ]
+  Eq.≡-Reasoning.∎
+```
 
 ## Test examples
 
