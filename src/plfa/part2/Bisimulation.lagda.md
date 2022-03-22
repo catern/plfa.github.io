@@ -180,6 +180,10 @@ to use a decidable predicate to pick out terms in the domain of `_†`, using
 [proof by reflection](/Decidable/#proof-by-reflection).
 
 ```
+-- can I somehow use... Dec/True on _~_...
+-- domain-† : ∀ {A B: Term} → Dec A 
+
+-- _† : ∀ {M : Term} (valid: True domain-†
 -- Your code goes here
 ```
 
