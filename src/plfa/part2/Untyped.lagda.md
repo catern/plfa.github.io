@@ -104,7 +104,14 @@ data Type : Set where
 Show that `Type` is isomorphic to `⊤`, the unit type.
 
 ```
--- Your code goes here
+open import plfa.part1.Isomorphism using (_≃_)
+open _≃_
+
+Type≃⊤ : Type ≃ ⊤
+to Type≃⊤ ★ = tt
+from Type≃⊤ tt = ★
+from∘to Type≃⊤ ★ = refl
+to∘from Type≃⊤ tt = refl
 ```
 
 ## Contexts
@@ -123,7 +130,15 @@ We let `Γ` and `Δ` range over contexts.
 Show that `Context` is isomorphic to `ℕ`.
 
 ```
--- Your code goes here
+Context≃ℕ : Context ≃ ℕ
+to Context≃ℕ ∅ = zero
+to Context≃ℕ (ctx , ★) = suc (to Context≃ℕ ctx)
+from Context≃ℕ zero = ∅
+from Context≃ℕ (suc x) = (from Context≃ℕ x , ★)
+from∘to Context≃ℕ ∅ = refl
+from∘to Context≃ℕ (x , ★) = cong (_, ★) (from∘to Context≃ℕ x)
+to∘from Context≃ℕ zero = refl
+to∘from Context≃ℕ (suc x) = cong suc (to∘from Context≃ℕ x)
 ```
 
 ## Variables and the lookup judgment
@@ -400,7 +415,13 @@ normalise completely?  Assume that `β` should not permit reduction
 unless both terms are in normal form.
 
 ```
--- Your code goes here
+-- um, that last sentence contains the entire answer...
+postulate
+  β' : ∀ {Γ} {N : Γ , ★ ⊢ ★} {M : Γ ⊢ ★}
+    → Normal N
+    → Normal M
+      ---------------------------------
+    → (ƛ N) · M —→ N [ M ]
 ```
 
 #### Exercise (`variant-2`) (practice)
@@ -411,7 +432,11 @@ permits reduction when both terms are values (that is, lambda
 abstractions).  What would `2+2ᶜ` reduce to in this case?
 
 ```
--- Your code goes here
+-- just drop ζ and restore β to its old form
+-- in that case, 2+2ᶜ will just step to
+plusᶜ-with-two : ∀ {Γ} → Γ ⊢ ★
+plusᶜ-with-two = ƛ ƛ (twoᶜ · # 1 · (twoᶜ · # 1 · # 0))
+-- just as it did before
 ```
 
 
@@ -752,7 +777,12 @@ Use the evaluator to confirm that `plus · two · two` and `four`
 normalise to the same term.
 
 ```
--- Your code goes here
+result : ∅ ⊢ ★ → ∅ ⊢ ★
+result x with eval (gas 100) x
+... | (steps {Γ} {A} {L} {N} _ _) = N
+
+2+2≡4 : result (plus · two · two) ≡ result four
+2+2≡4 = refl
 ```
 
 #### Exercise `multiplication-untyped` (recommended)
@@ -763,7 +793,14 @@ representation and the encoding of the fixpoint operator.
 Confirm that two times two is four.
 
 ```
--- Your code goes here
+mul : ∀ {Γ} → Γ ⊢ ★
+mul = μ ƛ ƛ
+  case (# 1)
+    `zero
+    (plus · (# 3 · # 0 · # 1) · # 1)
+
+2*2≡4 : result (mul · two · two) ≡ result four
+2*2≡4 = refl
 ```
 
 #### Exercise `encode-more` (stretch)
@@ -773,7 +810,50 @@ Chapter [More](/More/),
 save for primitive numbers, in the untyped lambda calculus.
 
 ```
--- Your code goes here
+let' : ∀ {Γ} → (Γ ⊢ ★) → (Γ , ★ ⊢ ★)  → (Γ ⊢ ★)
+let' L M = L · (ƛ M)
+
+_×'_ : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★) → (Γ ⊢ ★)
+L ×' M = (ƛ ƛ ƛ (# 0) · (# 2) · (# 1)) · L · M
+
+case× : ∀ {Γ} → (Γ ⊢ ★) → (Γ , ★ , ★ ⊢ ★) → (Γ ⊢ ★)
+case× L M = L · (ƛ ƛ M)
+
+-- these are just the encodings of proj in terms of case from chapter More
+proj₁' : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★)
+proj₁' L = case× L (# 1)
+
+proj₂' : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★)
+proj₂' L = case× L (# 0)
+
+inj₁ : ∀ {Γ} → (Γ ⊢ ★) →  (Γ ⊢ ★)
+inj₁ L = (ƛ ƛ ƛ (# 1) · (# 2)) · L
+
+inj₂ : ∀ {Γ} → (Γ ⊢ ★) →  (Γ ⊢ ★)
+inj₂ L = (ƛ ƛ ƛ (# 0) · (# 2)) · L
+
+case⊎ : ∀ {Γ} → (Γ ⊢ ★) → (Γ , ★ ⊢ ★) → (Γ , ★ ⊢ ★) → (Γ ⊢ ★)
+case⊎ L M N = L · (ƛ M) · (ƛ N)
+
+tt' : ∀ {Γ} → (Γ ⊢ ★)
+tt' = ƛ (# 0)
+
+case⊤ : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★) → (Γ ⊢ ★)
+case⊤ L M = L · M
+
+-- case⊥ : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★)
+-- this is non-terminating if L is really bottom; otherwise, it's undefined
+-- this is exactly what we want for case⊥ which should inf-loop
+-- case⊥ L = L
+
+cons : ∀ {Γ} → (Γ ⊢ ★) →  (Γ ⊢ ★) → (Γ ⊢ ★)
+cons L M = (ƛ ƛ ƛ ƛ ((# 0) · (# 4) · (# 3))) · L · M
+
+[] : ∀ {Γ} → (Γ ⊢ ★)
+[] = ƛ ƛ ƛ ƛ (# 1)
+
+caseL : ∀ {Γ} → (Γ ⊢ ★) → (Γ ⊢ ★) → (Γ , ★ , ★ ⊢ ★) → (Γ ⊢ ★)
+caseL L M N = L · M · (ƛ ƛ N)
 ```
 
 
