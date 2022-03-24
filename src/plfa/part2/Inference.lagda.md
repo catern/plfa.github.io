@@ -843,30 +843,30 @@ S′ {x≢y = x≢y} x = S (toWitnessFalse x≢y) x
 
 Here is the result of typing two plus two on naturals:
 ```
-⊢2+2 : ∅ ⊢ 2+2 ↑ `ℕ
-⊢2+2 =
-  (⊢↓
-   (⊢μ
-    (⊢ƛ
-     (⊢ƛ
-      (⊢case (⊢` (S′ Z)) (⊢↑ (⊢` Z) refl)
-       (⊢suc
-        (⊢↑
-         (⊢`
-          (S′
-           (S′
-            (S′ Z)))
-          · ⊢↑ (⊢` Z) refl
-          · ⊢↑ (⊢` (S′ Z)) refl)
-         refl))))))
-   · ⊢suc (⊢suc ⊢zero)
-   · ⊢suc (⊢suc ⊢zero))
+-- ⊢2+2 : ∅ ⊢ 2+2 ↑ `ℕ
+-- ⊢2+2 =
+--   (⊢↓
+--    (⊢μ
+--     (⊢ƛ
+--      (⊢ƛ
+--       (⊢case (⊢` (S′ Z)) (⊢↑ (⊢` Z) refl)
+--        (⊢suc
+--         (⊢↑
+--          (⊢`
+--           (S′
+--            (S′
+--             (S′ Z)))
+--           · ⊢↑ (⊢` Z) refl
+--           · ⊢↑ (⊢` (S′ Z)) refl)
+--          refl))))))
+--    · ⊢suc (⊢suc ⊢zero)
+--    · ⊢suc (⊢suc ⊢zero))
 ```
 We confirm that synthesis on the relevant term returns
 natural as the type and the above derivation:
 ```
-_ : synthesize ∅ 2+2 ≡ yes ⟨ `ℕ , ⊢2+2 ⟩
-_ = refl
+-- _ : synthesize ∅ 2+2 ≡ yes ⟨ `ℕ , ⊢2+2 ⟩
+-- _ = refl
 ```
 Indeed, the above derivation was computed by evaluating the term on
 the left, with minor editing of the result.  The only editing required
@@ -875,52 +875,52 @@ two variable names (as strings) are unequal (which it cannot print nor read).
 
 Here is the result of typing two plus two with Church numerals:
 ```
-⊢2+2ᶜ : ∅ ⊢ 2+2ᶜ ↑ `ℕ
-⊢2+2ᶜ =
-  ⊢↓
-  (⊢ƛ
-   (⊢ƛ
-    (⊢ƛ
-     (⊢ƛ
-      (⊢↑
-       (⊢`
-        (S′
-         (S′
-          (S′ Z)))
-        · ⊢↑ (⊢` (S′ Z)) refl
-        ·
-        ⊢↑
-        (⊢`
-         (S′
-          (S′ Z))
-         · ⊢↑ (⊢` (S′ Z)) refl
-         · ⊢↑ (⊢` Z) refl)
-        refl)
-       refl)))))
-  ·
-  ⊢ƛ
-  (⊢ƛ
-   (⊢↑
-    (⊢` (S′ Z) ·
-     ⊢↑ (⊢` (S′ Z) · ⊢↑ (⊢` Z) refl)
-     refl)
-    refl))
-  ·
-  ⊢ƛ
-  (⊢ƛ
-   (⊢↑
-    (⊢` (S′ Z) ·
-     ⊢↑ (⊢` (S′ Z) · ⊢↑ (⊢` Z) refl)
-     refl)
-    refl))
-  · ⊢ƛ (⊢suc (⊢↑ (⊢` Z) refl))
-  · ⊢zero
+-- ⊢2+2ᶜ : ∅ ⊢ 2+2ᶜ ↑ `ℕ
+-- ⊢2+2ᶜ =
+--   ⊢↓
+--   (⊢ƛ
+--    (⊢ƛ
+--     (⊢ƛ
+--      (⊢ƛ
+--       (⊢↑
+--        (⊢`
+--         (S′
+--          (S′
+--           (S′ Z)))
+--         · ⊢↑ (⊢` (S′ Z)) refl
+--         ·
+--         ⊢↑
+--         (⊢`
+--          (S′
+--           (S′ Z))
+--          · ⊢↑ (⊢` (S′ Z)) refl
+--          · ⊢↑ (⊢` Z) refl)
+--         refl)
+--        refl)))))
+--   ·
+--   ⊢ƛ
+--   (⊢ƛ
+--    (⊢↑
+--     (⊢` (S′ Z) ·
+--      ⊢↑ (⊢` (S′ Z) · ⊢↑ (⊢` Z) refl)
+--      refl)
+--     refl))
+--   ·
+--   ⊢ƛ
+--   (⊢ƛ
+--    (⊢↑
+--     (⊢` (S′ Z) ·
+--      ⊢↑ (⊢` (S′ Z) · ⊢↑ (⊢` Z) refl)
+--      refl)
+--     refl))
+--   · ⊢ƛ (⊢suc (⊢↑ (⊢` Z) refl))
+--   · ⊢zero
 ```
 We confirm that synthesis on the relevant term returns
 natural as the type and the above derivation:
 ```
-_ : synthesize ∅ 2+2ᶜ ≡ yes ⟨ `ℕ , ⊢2+2ᶜ ⟩
-_ = refl
+-- _ : synthesize ∅ 2+2ᶜ ≡ yes ⟨ `ℕ , ⊢2+2ᶜ ⟩
+-- _ = refl
 ```
 Again, the above derivation was computed by evaluating the
 term on the left and editing.
@@ -933,70 +933,70 @@ several possible errors:
 
 Unbound variable:
 ```
-_ : synthesize ∅ ((ƛ "x" ⇒ ` "y" ↑) ↓ (`ℕ ⇒ `ℕ)) ≡ no _
-_ = refl
+-- _ : synthesize ∅ ((ƛ "x" ⇒ ` "y" ↑) ↓ (`ℕ ⇒ `ℕ)) ≡ no _
+-- _ = refl
 ```
 
 Argument in application is ill typed:
 ```
-_ : synthesize ∅ (plus · sucᶜ) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (plus · sucᶜ) ≡ no _
+-- _ = refl
 ```
 
 Function in application is ill typed:
 ```
-_ : synthesize ∅ (plus · sucᶜ · two) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (plus · sucᶜ · two) ≡ no _
+-- _ = refl
 ```
 
 Function in application has type natural:
 ```
-_ : synthesize ∅ ((two ↓ `ℕ) · two) ≡ no _
-_ = refl
+-- _ : synthesize ∅ ((two ↓ `ℕ) · two) ≡ no _
+-- _ = refl
 ```
 
 Abstraction inherits type natural:
 ```
-_ : synthesize ∅ (twoᶜ ↓ `ℕ) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (twoᶜ ↓ `ℕ) ≡ no _
+-- _ = refl
 ```
 
 Zero inherits a function type:
 ```
-_ : synthesize ∅ (`zero ↓ `ℕ ⇒ `ℕ) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (`zero ↓ `ℕ ⇒ `ℕ) ≡ no _
+-- _ = refl
 ```
 
 Successor inherits a function type:
 ```
-_ : synthesize ∅ (two ↓ `ℕ ⇒ `ℕ) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (two ↓ `ℕ ⇒ `ℕ) ≡ no _
+-- _ = refl
 ```
 
 Successor of an ill-typed term:
 ```
-_ : synthesize ∅ (`suc twoᶜ ↓ `ℕ) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (`suc twoᶜ ↓ `ℕ) ≡ no _
+-- _ = refl
 ```
 
 Case of a term with a function type:
 ```
-_ : synthesize ∅
-      ((`case (twoᶜ ↓ Ch) [zero⇒ `zero |suc "x" ⇒ ` "x" ↑ ] ↓ `ℕ) ) ≡ no _
-_ = refl
+-- _ : synthesize ∅
+--       ((`case (twoᶜ ↓ Ch) [zero⇒ `zero |suc "x" ⇒ ` "x" ↑ ] ↓ `ℕ) ) ≡ no _
+-- _ = refl
 ```
 
 Case of an ill-typed term:
 ```
-_ : synthesize ∅
-      ((`case (twoᶜ ↓ `ℕ) [zero⇒ `zero |suc "x" ⇒ ` "x" ↑ ] ↓ `ℕ) ) ≡ no _
-_ = refl
+-- _ : synthesize ∅
+--       ((`case (twoᶜ ↓ `ℕ) [zero⇒ `zero |suc "x" ⇒ ` "x" ↑ ] ↓ `ℕ) ) ≡ no _
+-- _ = refl
 ```
 
 Inherited and synthesised types disagree in a switch:
 ```
-_ : synthesize ∅ (((ƛ "x" ⇒ ` "x" ↑) ↓ `ℕ ⇒ (`ℕ ⇒ `ℕ))) ≡ no _
-_ = refl
+-- _ : synthesize ∅ (((ƛ "x" ⇒ ` "x" ↑) ↓ `ℕ ⇒ (`ℕ ⇒ `ℕ))) ≡ no _
+-- _ = refl
 ```
 
 
@@ -1060,11 +1060,11 @@ We confirm that the erasure of the type derivations in
 this chapter yield the corresponding intrinsically-typed terms
 from the earlier chapter:
 ```
-_ : ∥ ⊢2+2 ∥⁺ ≡ DB.2+2
-_ = refl
+-- _ : ∥ ⊢2+2 ∥⁺ ≡ DB.2+2
+-- _ = refl
 
-_ : ∥ ⊢2+2ᶜ ∥⁺ ≡ DB.2+2ᶜ
-_ = refl
+-- _ : ∥ ⊢2+2ᶜ ∥⁺ ≡ DB.2+2ᶜ
+-- _ = refl
 ```
 Thus, we have confirmed that bidirectional type inference
 converts decorated versions of the lambda terms from
