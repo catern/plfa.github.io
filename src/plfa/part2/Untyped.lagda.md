@@ -623,55 +623,55 @@ generalises to an arbitrary context `Γ`.
 
 We reiterate our previous example. Two plus two is four, with Church numerals:
 ```
-_ : eval (gas 100) 2+2ᶜ ≡
-  steps
-   ((ƛ
-     (ƛ
-      (ƛ
-       (ƛ
-        (` (S (S (S Z)))) · (` (S Z)) ·
-        ((` (S (S Z))) · (` (S Z)) · (` Z))))))
-    · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
-    · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
-   —→⟨ ξ₁ β ⟩
-    (ƛ
-     (ƛ
-      (ƛ
-       (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) ·
-       ((` (S (S Z))) · (` (S Z)) · (` Z)))))
-    · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
-   —→⟨ β ⟩
-    ƛ
-    (ƛ
-     (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) ·
-     ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z)))
-   —→⟨ ζ (ζ (ξ₁ β)) ⟩
-    ƛ
-    (ƛ
-     (ƛ (` (S (S Z))) · ((` (S (S Z))) · (` Z))) ·
-     ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z)))
-   —→⟨ ζ (ζ β) ⟩
-    ƛ
-    (ƛ
-     (` (S Z)) ·
-     ((` (S Z)) ·
-      ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z))))
-   —→⟨ ζ (ζ (ξ₂ (ξ₂ (ξ₁ β)))) ⟩
-    ƛ
-    (ƛ
-     (` (S Z)) ·
-     ((` (S Z)) ·
-      ((ƛ (` (S (S Z))) · ((` (S (S Z))) · (` Z))) · (` Z))))
-   —→⟨ ζ (ζ (ξ₂ (ξ₂ β))) ⟩
-    ƛ (ƛ (` (S Z)) · ((` (S Z)) · ((` (S Z)) · ((` (S Z)) · (` Z)))))
-   ∎)
-   (done
-    (ƛ
-     (ƛ
-      (′
-       (` (S Z)) ·
-       (′ (` (S Z)) · (′ (` (S Z)) · (′ (` (S Z)) · (′ (` Z)))))))))
-_ = refl
+-- _ : eval (gas 100) 2+2ᶜ ≡
+--   steps
+--    ((ƛ
+--      (ƛ
+--       (ƛ
+--        (ƛ
+--         (` (S (S (S Z)))) · (` (S Z)) ·
+--         ((` (S (S Z))) · (` (S Z)) · (` Z))))))
+--     · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
+--     · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
+--    —→⟨ ξ₁ β ⟩
+--     (ƛ
+--      (ƛ
+--       (ƛ
+--        (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) ·
+--        ((` (S (S Z))) · (` (S Z)) · (` Z)))))
+--     · (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z))))
+--    —→⟨ β ⟩
+--     ƛ
+--     (ƛ
+--      (ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) ·
+--      ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z)))
+--    —→⟨ ζ (ζ (ξ₁ β)) ⟩
+--     ƛ
+--     (ƛ
+--      (ƛ (` (S (S Z))) · ((` (S (S Z))) · (` Z))) ·
+--      ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z)))
+--    —→⟨ ζ (ζ β) ⟩
+--     ƛ
+--     (ƛ
+--      (` (S Z)) ·
+--      ((` (S Z)) ·
+--       ((ƛ (ƛ (` (S Z)) · ((` (S Z)) · (` Z)))) · (` (S Z)) · (` Z))))
+--    —→⟨ ζ (ζ (ξ₂ (ξ₂ (ξ₁ β)))) ⟩
+--     ƛ
+--     (ƛ
+--      (` (S Z)) ·
+--      ((` (S Z)) ·
+--       ((ƛ (` (S (S Z))) · ((` (S (S Z))) · (` Z))) · (` Z))))
+--    —→⟨ ζ (ζ (ξ₂ (ξ₂ β))) ⟩
+--     ƛ (ƛ (` (S Z)) · ((` (S Z)) · ((` (S Z)) · ((` (S Z)) · (` Z)))))
+--    ∎)
+--    (done
+--     (ƛ
+--      (ƛ
+--       (′
+--        (` (S Z)) ·
+--        (′ (` (S Z)) · (′ (` (S Z)) · (′ (` (S Z)) · (′ (` Z)))))))))
+-- _ = refl
 ```
 
 ## Naturals and fixpoint
@@ -722,14 +722,14 @@ Applying successor to the zero indeed reduces to the Scott numeral
 for one.
 
 ```
-_ : eval (gas 100) (`suc_ {∅} `zero) ≡
-    steps
-        ((ƛ (ƛ (ƛ # 1 · # 2))) · (ƛ (ƛ # 0))
-    —→⟨ β ⟩
-         ƛ (ƛ # 1 · (ƛ (ƛ # 0)))
-    ∎)
-    (done (ƛ (ƛ (′ (` (S Z)) · (ƛ (ƛ (′ (` Z))))))))
-_ = refl
+-- _ : eval (gas 100) (`suc_ {∅} `zero) ≡
+--     steps
+--         ((ƛ (ƛ (ƛ # 1 · # 2))) · (ƛ (ƛ # 0))
+--     —→⟨ β ⟩
+--          ƛ (ƛ # 1 · (ƛ (ƛ # 0)))
+--     ∎)
+--     (done (ƛ (ƛ (′ (` (S Z)) · (ƛ (ƛ (′ (` Z))))))))
+-- _ = refl
 ```
 
 We can also define fixpoint.  Using named terms, we define:
@@ -781,8 +781,8 @@ result : ∅ ⊢ ★ → ∅ ⊢ ★
 result x with eval (gas 100) x
 ... | (steps {Γ} {A} {L} {N} _ _) = N
 
-2+2≡4 : result (plus · two · two) ≡ result four
-2+2≡4 = refl
+-- 2+2≡4 : result (plus · two · two) ≡ result four
+-- 2+2≡4 = refl
 ```
 
 #### Exercise `multiplication-untyped` (recommended)
@@ -799,8 +799,8 @@ mul = μ ƛ ƛ
     `zero
     (plus · (# 3 · # 0 · # 1) · # 1)
 
-2*2≡4 : result (mul · two · two) ≡ result four
-2*2≡4 = refl
+-- 2*2≡4 : result (mul · two · two) ≡ result four
+-- 2*2≡4 = refl
 ```
 
 #### Exercise `encode-more` (stretch)
@@ -945,6 +945,121 @@ abs-cong : ∀ {Γ} {N N' : Γ , ★ ⊢ ★}
 abs-cong (M ∎) = ƛ M ∎
 abs-cong (L —→⟨ r ⟩ rs) = ƛ L —→⟨ ζ r ⟩ abs-cong rs
 ```
+
+## Stuff
+
+```
+data RType : Set where
+  `*    : RType
+  _⇒_   : RType → RType → RType
+
+Norm→RType : ∀ {Γ : Context} {A : Type} {x : Γ ⊢ A} → Normal x → RType
+Norm→RType (′ ntl) = {!!}
+Norm→RType (ƛ x) = {!!} ⇒ {!!}
+-- wait okay... so don't we need like...
+-- a context, here...?
+-- so when we look at x, we should get two outputs:
+-- 1. constraints on the top of the type context (the type of the formal argument)
+-- 2. constraints on the type we evaluate to.
+-- well... couldn't we... also get constraints on things deeper in the context?
+-- ah but those will be... folded in... kinda?
+-- no, they will be... used...
+-- if we have ƛ ƛ Z + (S Z),
+-- obviously we need to extract constraints from the inner part...
+-- aha. okay. so what we output is:
+-- a typing context with as much detail as we can...?
+-- like, A : Nat, B : *, C : Nat → *, etc.
+-- and then we need to unify it with others? ew...
+-- cuz we'd get this output from both parts of an application, and need to unify.
+-- it all seems complicated. hm.
+-- okay... so what maybe we get is...
+-- okay so we look at x (the body of a lambda) and it tells us two things...
+-- but then that body could be an application, or it could be another lambda,
+-- so we need to get more than two things, we need the full details...
+-- so maybe we don't... have that?
+-- oh, wait, let's keep in mind that we're in normal form here...
+-- so... maybe it's easier?
+-- like, basically...
+-- maybe what we output is just part of the type? hmmmmmmmmmm.....
+-- so neutral form is just a variable applied to some number of normal arguments.
+-- and normal form is just something in neutral form,
+-- wrapped inside some number of lambdas.
+-- so maybe... with neutral form...
+-- we return a function type for that single variable at the head...
+-- by just doing, like...
+Neut→RType : ∀ {Γ : Context} {A : Type} {x : Γ ⊢ A} → Neutral x → RType
+Neut→RType (` x) = `*
+Neut→RType (x · y) = Norm→RType y ⇒ Neut→RType x
+```
+this outputs the type of the single variable at the head of the neutral chain...
+
+but... okay...
+so then how does normal work?
+
+does it output the actual type instead?
+or what?
+
+outputting the type of the single variable is... the main useful thing we can do.
+
+so if we have some normal thing...
+
+hmmm.
+
+ohhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhhh
+
+we don't know *which* variable we're constraining, with the neutral thing!
+
+when we get the type out from neutral, there are two relevant parts:
+the type, *and* the variable which has some specific type!
+
+well, isn't "the variable which has some specific type",
+just a matter of binding depth?
+
+and can't we express binding depth with... function types?
+
+so instead of returning a type,
+we return the type of the function we must be nested inside?
+
+again this seems unification-y though, hm.
+
+but, also again, we are in normal form...
+
+well can't we still have...
+
+Z · (Z · Z) · (Z · Z)
+
+so like, we'll return that Z has to be type (* → *) → (* → *) → *,
+lol.
+(from recursive invocation for the first two arguments)
+
+well that's self-application, baby!
+deal with it!
+
+okay so obviously we need more inherent type structure...
+
+or, I guess, just intersection types, lol
+
+we just return "here's a list of types for this var"
+and then we just intersect them.
+
+we don't need no unification lol
+
+well... maybe we need deduplication...
+
+that's annoying though.
+
+so what about more inherent type structure?
+```
+¬emp-Neut : ∀ {A : Type} {x : ∅ ⊢ A} → ¬ (Neutral x)
+¬emp-Neut (x · _) = ¬emp-Neut x
+
+Norm→RType1 : ∀ {Γ : Context} {A : Type} {x : ∅ ⊢ A} → Normal x → RType
+Norm→RType1 (′ x) = ⊥-elim (¬emp-Neut x)
+Norm→RType1 (ƛ (′ x)) = (Neut→RType x) ⇒ (Neut→RType x)
+Norm→RType1 (ƛ (ƛ (′ x))) = {!!} ⇒ ({!!} ⇒ {!!})
+Norm→RType1 (ƛ (ƛ (ƛ x))) = {!!}
+```
+
 
 ## Unicode
 

@@ -477,7 +477,12 @@ Rewrite your definition of multiplication from
 Chapter [Lambda](/Lambda/), decorated to support inference.
 
 ```
--- Your code goes here
+mul : Term⁺
+mul = (μ "*" ⇒ ƛ "m" ⇒ ƛ "n" ⇒
+    `case `"m"
+      [zero⇒ `zero
+      |suc "lm" ⇒ (plus · ((`"*" · (`"lm" ↑) · (`"n" ↑)) ↑) · (`"n" ↑)) ↑ ])
+      ↓ (`ℕ ⇒ `ℕ ⇒ `ℕ)
 ```
 
 
@@ -488,6 +493,7 @@ Chapter [More](/More/).
 
 ```
 -- Your code goes here
+-- maybe later LOL
 ```
 
 
@@ -1103,6 +1109,23 @@ Chapter [More](/More/).
 -- Your code goes here
 ```
 
+#### Exercise `do-whatever-lol` (stretchy)
+
+okay so we want... to make a function from types to terms.
+let's do it.
+```
+Type→Term⁻ : ∀ (A : Type) → Term⁻
+Type→Term⁺ : ∀ (A : Type) → Term⁺
+
+Type→Term⁻ `ℕ = `zero
+Type→Term⁻ (A ⇒ B) = (Type→Term⁺ (A ⇒ B)) ↑
+
+Type→Term⁺ `ℕ = `zero ↓ `ℕ 
+-- oh this needs to be a lambda...
+Type→Term⁺ (A ⇒ B) = ((ƛ "x" ⇒ (Type→Term⁻ B)) ↓ (A ⇒ B)) · (Type→Term⁻ A)
+
+-- Type→Term⁻ (`ℕ ⇒ `ℕ ⇒ `ℕ)
+```
 
 ## Bidirectional inference in Agda
 
